@@ -61,7 +61,7 @@ def main():
         from hads.local_server import run_static_server 
         run_static_server(
           settings.STATIC_URL, 
-          os.path.join(CWD, ,admin["static"]["local"]),
+          os.path.join(CWD, admin["static"]["local"]),
           admin["local_server"]["port"]["static"]
         )
       elif options.local_server_run == "proxy":
