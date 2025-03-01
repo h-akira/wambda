@@ -18,8 +18,11 @@ This is a command line tool for managing hads project.
   parser.add_argument("-s", "--static-sync2s3", action="store_true", help="sync static files to s3")
   parser.add_argument("-b", "--build", action="store_true", help="exec sam build")
   parser.add_argument("-d", "--deploy", action="store_true", help="exec sam deploy")
+  parser.add_argument("--delete", action="store_true", help="exec sam delete")
   parser.add_argument("-i", "--init", action="store_true", help="create hads project")
   parser.add_argument("-g", "--test-get", metavar="path", help="test get method")
+  parser.add_argument("--sam", nargs="*", metavar="arg", help="exec sam command")
+  parser.add_argument("--aws", nargs="*", metavar="arg", help="exec aws command")
   parser.add_argument(
     "-l", "--local-server-run", metavar="profile", choices=["sam", "static", "proxy"],
     help="aws profile, this takes precedence over admin file"
@@ -45,7 +48,7 @@ def main():
     with open(options.file) as f:
       admin = json.load(f)
     sys.path.append(os.path.join(os.path.dirname(options.file),"Lambda"))
-    CWD = os.path.dirname(options.file)
+    CWD = os.path.abspath(os.path.dirname(options.file))
     from project import settings
     # 環境変数を設定
     env = os.environ.copy()
@@ -93,10 +96,21 @@ def main():
       else:
         print("Error: static.local or static.s3 is not defined")
         sys.exit()
+    if options.sam:
+      print(f"Exec: sam {' '.join(options.sam)}")
+      subprocess.run(["sam"] + options.sam, env=env, cwd=CWD)
+    if options.aws:
+      print(f"Exec: aws {' '.join(options.aws)}")
+      subprocess.run(["aws"] + options.aws, env=env, cwd=CWD)
     if options.build:
+      print("Exec: sam build")
       subprocess.run(["sam", "build"], env=env, cwd=CWD)
     if options.deploy:
+      print("Exec: sam deploy")
       subprocess.run(["sam", "deploy"], env=env, cwd=CWD)
+    if options.delete:
+      print("Exec: sam delete")
+      subprocess.run(["sam", "delete"], env=env, cwd=CWD)
 
 if __name__ == '__main__':
   main()
