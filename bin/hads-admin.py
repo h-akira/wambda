@@ -19,6 +19,7 @@ This is a command line tool for managing hads project.
   parser.add_argument("-b", "--build", action="store_true", help="exec sam build")
   parser.add_argument("-d", "--deploy", action="store_true", help="exec sam deploy")
   parser.add_argument("-i", "--init", action="store_true", help="create hads project")
+  parser.add_argument("-g", "--test-get", metavar="path", help="test get method")
   parser.add_argument(
     "-l", "--local-server-run", metavar="profile", choices=["sam", "static", "proxy"],
     help="aws profile, this takes precedence over admin file"
@@ -72,6 +73,19 @@ def main():
           admin["local_server"]["port"]["sam"],
           admin["local_server"]["port"]["static"]
         )
+      sys.exit()
+    if options.test_get:
+      from lambda_function import lambda_handler
+      response = lambda_handler(
+        {
+          "path": options.test_get,
+          "requestContext":{
+            "httpMethod": "GET"
+          }
+        },
+        None
+      )
+      print(response)
       sys.exit()
     if options.static_sync2s3:
       if admin.get("static") and admin["static"].get("local") and admin["static"].get("s3"):
