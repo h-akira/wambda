@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 def run_static_server(static_url, static_dir, port=8080):
   class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def translate_path(self, path):
-      if path.startswith('/static'):
+      if path.startswith(static_url):
         print("path:", path)
         return os.path.join(os.getcwd(),  path[1:])
       else:
@@ -46,6 +46,6 @@ def run_proxy_server(static_url, port=8000, sam_port=3000, static_port=8080):
           self.wfile.write(response.read())
       except urllib.error.URLError as e:
         self.send_error(500, str(e.reason))
-  httpd = http.server.HTTPServer(('localhost', 8000), ReverseProxyHandler)
+  httpd = http.server.HTTPServer(('localhost', port), ReverseProxyHandler)
   print(f"serving at port {port}")
   httpd.serve_forever()
