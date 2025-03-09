@@ -21,6 +21,7 @@ This is a command line tool for managing hads project.
   parser.add_argument("--delete", action="store_true", help="exec sam delete")
   parser.add_argument("-i", "--init", action="store_true", help="create hads project")
   parser.add_argument("-g", "--test-get", metavar="path", help="test get method")
+  parser.add_argument("-e", "--test-get-event", metavar="path", help="test get method by event file")
   parser.add_argument("--sam", nargs="*", metavar="arg", help="exec sam command")
   parser.add_argument("--aws", nargs="*", metavar="arg", help="exec aws command")
   parser.add_argument(
@@ -53,14 +54,18 @@ def main():
     # 環境変数を設定
     env = os.environ.copy()
     if options.profile:
-      env["AWS_PROFILE"] = options
+      profile = options.profile
+      env["AWS_PROFILE"] = profile
     else:
-      if admin.get("profile"):
-        env["AWS_PROFILE"] = admin["profile"]
+      try:
+        profile = settings.LOCAL_PROFILE
+        env["AWS_PROFILE"] = profile
+      except AttributeError:
+        print("Warning: LOCAL_PROFILE is not defined")
     # 各オプションの処理
     if options.local_server_run:
       if options.local_server_run == "sam":
-        subprocess.run(["sam", "local", "start-api", "--port", str(admin["local_server"]["port"]["sam"])], env=env, cwd=CWD)
+        subprocess.run(["sam", "local", "start-api", "--port", str(admin["local_server"]["port"]["sam"]), "--profile", profile], env=env, cwd=CWD)
       elif options.local_server_run == "static":
         from hads.local_server import run_static_server 
         run_static_server(
@@ -77,8 +82,21 @@ def main():
           admin["local_server"]["port"]["static"]
         )
       sys.exit()
-    if options.test_get:
+    if options.test_get_event:
+      with open(options.test_get_event) as f:
+        event = json.load(f)
       from lambda_function import lambda_handler
+      os.environ["AWS_PROFILE"] = profile
+      response = lambda_handler(event, None)
+      print("Response:")
+      print(response)
+      sys.exit()
+    if options.test_get is not None:
+      if not options.test_get.startswith("/"):
+        print("Error: path must start with '/'")
+        sys.exit()
+      from lambda_function import lambda_handler
+      os.environ["AWS_PROFILE"] = profile
       response = lambda_handler(
         {
           "path": options.test_get,
@@ -88,6 +106,7 @@ def main():
         },
         None
       )
+      print("Response:")
       print(response)
       sys.exit()
     if options.static_sync2s3:

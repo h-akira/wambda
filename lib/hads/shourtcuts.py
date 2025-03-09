@@ -1,11 +1,33 @@
 import os
 
+def login_required(func):
+  def wrapper(master, **kwargs):
+    if not master.request.auth:
+      return {
+        'statusCode': 302,
+        'headers': {
+          'Location': master.settings.AUTH_PAGE.get_login_url(master)
+        }
+      }
+    return func(master, **kwargs)
+  return wrapper
+
+def get_login_url(master):
+  return master.settings.AUTH_PAGE.get_login_url(master)
+
+def get_signup_url(master):
+  return master.settings.AUTH_PAGE.get_signup_url(master)
+
 def reverse(master, app_name, **kwargs):
   path = master.router.name2path(app_name, kwargs)
-  if master.settings.MAPPING_PATH.startswith("/"):
-    MAPPING_PATH = master.settings.MAPPING_PATH[1:]
+  if master.local:
+    MAPPING_PATH = master.settings.MAPPING_PATH_LOCAL
   else:
     MAPPING_PATH = master.settings.MAPPING_PATH
+  if MAPPING_PATH.startswith("/"):
+    MAPPING_PATH = MAPPING_PATH[1:]
+  # else:
+  #   MAPPING_PATH = MAPPING_PATH
   return os.path.join("/", MAPPING_PATH, path)
 
 def static(master, file_path):
@@ -13,17 +35,19 @@ def static(master, file_path):
     STATIC_URL = master.settings.STATIC_URL[1:]
   else:
     STATIC_URL = master.settings.STATIC_URL
-  if master.settings.MAPPING_PATH.startswith("/"):
-    MAPPING_PATH = master.settings.MAPPING_PATH[1:]
+  if master.local:
+    MAPPING_PATH = master.settings.MAPPING_PATH_LOCAL
   else:
     MAPPING_PATH = master.settings.MAPPING_PATH
+  if MAPPING_PATH.startswith("/"):
+    MAPPING_PATH = MAPPING_PATH[1:]
   return os.path.join("/", MAPPING_PATH, STATIC_URL, file_path)
 
 def redirect(master, app_name, **kwargs):
   return {
     "statusCode": 302,
     "headers": {
-      "Location": reverse(app_name, **kwargs)
+      "Location": reverse(master, app_name, **kwargs)
     }
   }
 
@@ -48,6 +72,8 @@ def render(master, template_file, context={}, content_type="text/html; charset=U
   )
   env.globals['static'] = static
   env.globals['reverse'] = reverse
+  env.globals['get_login_url'] = get_login_url
+  env.globals['get_signup_url'] = get_signup_url
   template = env.get_template(template_file)
   if "master" not in context.keys():
     context["master"] = master

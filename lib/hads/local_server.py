@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# Created: 2025-02-28 22:38:55
-
 import os
 import http.server
 import socketserver
