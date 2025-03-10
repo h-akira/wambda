@@ -28,7 +28,6 @@ class Cognito:
     return response.json()
   def _get_decode_token(self, id_token):
     from jwt import decode, PyJWKClient
-    print(f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json')
     jwk_client = PyJWKClient(
       f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
     )
@@ -170,7 +169,6 @@ class Cognito:
       raise Exception("not auth")
     import boto3
     client = boto3.client('cognito-idp')
-    print(master.request.access_token)
     response = client.global_sign_out(
       AccessToken = master.request.access_token
     )
