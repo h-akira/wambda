@@ -86,7 +86,6 @@ def main():
       with open(options.test_get_event) as f:
         event = json.load(f)
       from lambda_function import lambda_handler
-      os.environ["AWS_PROFILE"] = profile
       response = lambda_handler(event, None)
       print("Response:")
       print(response)
@@ -96,7 +95,6 @@ def main():
         print("Error: path must start with '/'")
         sys.exit()
       from lambda_function import lambda_handler
-      os.environ["AWS_PROFILE"] = profile
       response = lambda_handler(
         {
           "path": options.test_get,
