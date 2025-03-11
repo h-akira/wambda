@@ -3,12 +3,14 @@
 HADS (h-akira AWS Develop with Serverless) is a framework to develop serverless web applications on AWS.  
 Although this framework is a successor to [HAD](https://github.com/h-akira/had), 
 there are some cases where it is recommended to continue using HAD because the philosophy is very different.
+
 ## Philosophy
 - Use SAM
 - One Lambda
 - Static files are distributed from S3
 - Test Locally
 - Like Django
+
 ## Structure
 The AWS configuration for a system built using HADS is shown below. 
 Only Lambda and API Gateway are created directly by HADS. 
@@ -25,6 +27,11 @@ The view function is executed in the handler and the result is returned.
 
 ## Usage
 Comming soon...
+
+## SampleProject
+The following is a sample project that uses HADS.
+- [HadsSampleProject](https://github.com/h-akira/HadsSampleProject)
+
 ## Development Schedule
-The following features will be added ad later date:
+The following features will be added later date:
 - Genarete SAM and other templates
