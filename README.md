@@ -27,6 +27,4 @@ The view function is executed in the handler and the result is returned.
 Comming soon...
 ## Development Schedule
 The following features will be added ad later date:
-- Authentication and authorization with Cognito
 - Genarete SAM and other templates
-- Authentication information registration function when using boto3 locally
