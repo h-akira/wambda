@@ -7,6 +7,8 @@ import sys
 import os
 import subprocess
 import json
+import importlib
+
 
 def parse_args():
   import argparse
@@ -15,6 +17,7 @@ This is a command line tool for managing hads project.
 """, formatter_class = argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument("--version", action="version", version='%(prog)s 0.0.1')
   parser.add_argument("-p", "--profile", metavar="profile", help="aws profile, this takes precedence over admin file")
+  parser.add_argument("-r", "--region", metavar="region", help="aws region, this takes precedence over admin file")
   parser.add_argument("-s", "--static-sync2s3", action="store_true", help="sync static files to s3")
   parser.add_argument("-b", "--build", action="store_true", help="exec sam build")
   parser.add_argument("-d", "--deploy", action="store_true", help="exec sam deploy")
@@ -49,8 +52,8 @@ def main():
     with open(options.file) as f:
       admin = json.load(f)
     sys.path.append(os.path.join(os.path.dirname(options.file),"Lambda"))
-    CWD = os.path.abspath(os.path.dirname(options.file))
     from project import settings
+    CWD = os.path.abspath(os.path.dirname(options.file))
     # 環境変数を設定
     env = os.environ.copy()
     if options.profile:
@@ -58,14 +61,29 @@ def main():
       env["AWS_PROFILE"] = profile
     else:
       try:
-        profile = settings.LOCAL_PROFILE
-        env["AWS_PROFILE"] = profile
-      except AttributeError:
-        print("Warning: LOCAL_PROFILE is not defined")
+        if admin["profile"]:
+          profile = admin["profile"]
+        else:
+          profile = "default"
+      except KeyError:
+        profile = "default"
+      env["AWS_PROFILE"] = profile
+    if options.region:
+      region = options.region
+      env["AWS_DEFAULT_REGION"] = region
+    else:
+      try:
+        if admin["region"]:
+          region = admin["region"]
+          env["AWS_DEFAULT_REGION"] = region
+        else:
+          raise Exception("region is not defined")
+      except KeyError:
+        raise Exception("region is not defined")
     # 各オプションの処理
     if options.local_server_run:
       if options.local_server_run == "sam":
-        subprocess.run(["sam", "local", "start-api", "--port", str(admin["local_server"]["port"]["sam"]), "--profile", profile], env=env, cwd=CWD)
+        subprocess.run(["sam", "local", "start-api", "--port", str(admin["local_server"]["port"]["sam"]), "--profile", profile, "--region", region], env=env, cwd=CWD)
       elif options.local_server_run == "static":
         from hads.local_server import run_static_server 
         run_static_server(
@@ -109,7 +127,10 @@ def main():
       sys.exit()
     if options.static_sync2s3:
       if admin.get("static") and admin["static"].get("local") and admin["static"].get("s3"):
-        subprocess.run(["aws", "s3", "sync", admin["static"]["local"], admin["static"]["s3"]], env=env, cwd=CWD)
+        print("Exec: aws s3 sync")
+        CMD_LIST = ["aws", "s3", "sync", admin["static"]["local"], admin["static"]["s3"], "--delete"]
+        print("Exec: " + " ".join(CMD_LIST))
+        subprocess.run(CMD_LIST, env=env, cwd=CWD)
       else:
         print("Error: static.local or static.s3 is not defined")
         sys.exit()
@@ -121,13 +142,13 @@ def main():
       subprocess.run(["aws"] + options.aws, env=env, cwd=CWD)
     if options.build:
       print("Exec: sam build")
-      subprocess.run(["sam", "build"], env=env, cwd=CWD)
+      subprocess.run(["sam", "build", "--profile", profile, "--region", region], env=env, cwd=CWD)
     if options.deploy:
       print("Exec: sam deploy")
-      subprocess.run(["sam", "deploy"], env=env, cwd=CWD)
+      subprocess.run(["sam", "deploy", "--profile", profile, "--region", region], env=env, cwd=CWD)
     if options.delete:
       print("Exec: sam delete")
-      subprocess.run(["sam", "delete"], env=env, cwd=CWD)
+      subprocess.run(["sam", "delete", "--profile", profile, "--region", region], env=env, cwd=CWD)
 
 if __name__ == '__main__':
   main()
