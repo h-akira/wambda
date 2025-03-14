@@ -49,9 +49,9 @@ class Router:
             return os.path.join(root, formatted)
       elif urlpattern.__class__ is self.__class__:
         if len(name_list) == 1:
-          continue
+          raise Exception("name_list must have more than 1 element")
         if urlpattern.name == name_list[0]:
-          root, kwargs = os.path.join(root, _step_format(urlpattern.root, kwargs))
+          root, kwargs = _step_format(urlpattern.root, kwargs)
           return urlpattern.name2path(":".join(name_list[1:]), kwargs, root=os.path.join(root, urlpattern.root))
         if path:
           return self.root + path
