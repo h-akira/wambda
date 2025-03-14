@@ -21,6 +21,7 @@ This is a command line tool for managing hads project.
   parser.add_argument("-s", "--static-sync2s3", action="store_true", help="sync static files to s3")
   parser.add_argument("-b", "--build", action="store_true", help="exec sam build")
   parser.add_argument("-d", "--deploy", action="store_true", help="exec sam deploy")
+  parser.add_argument("-c", "--no-confirm-changeset", action="store_true", help="add --no-confirm-changeset when exec sam deploy")
   parser.add_argument("--delete", action="store_true", help="exec sam delete")
   parser.add_argument("-i", "--init", action="store_true", help="create hads project")
   parser.add_argument("-g", "--test-get", metavar="path", help="test get method")
@@ -144,8 +145,12 @@ def main():
       print("Exec: sam build")
       subprocess.run(["sam", "build", "--profile", profile, "--region", region], env=env, cwd=CWD)
     if options.deploy:
-      print("Exec: sam deploy")
-      subprocess.run(["sam", "deploy", "--profile", profile, "--region", region], env=env, cwd=CWD)
+      if options.no_confirm_changeset:
+        print("Exec: sam deploy --no-confirm-changeset")
+        subprocess.run(["sam", "deploy", "--profile", profile, "--region", region, "--no-confirm-changeset"], env=env, cwd=CWD)
+      else:
+        print("Exec: sam deploy")
+        subprocess.run(["sam", "deploy", "--profile", profile, "--region", region], env=env, cwd=CWD)
     if options.delete:
       print("Exec: sam delete")
       subprocess.run(["sam", "delete", "--profile", profile, "--region", region], env=env, cwd=CWD)
