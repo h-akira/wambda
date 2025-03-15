@@ -64,8 +64,8 @@ class Router:
     if abs_path is not None:
       if len(abs_path)>1 and abs_path[-1] == "/":
         abs_path = abs_path[:-1]
-      routers = []
       segments = self._abs_path2segments(abs_path)
+    routers = []
     for urlpattern in self.urlpatterns:
       if urlpattern.__class__ is Path:
         flag, kwargs = self._matching_chercker(segments, urlpattern.segments, mode="path")
