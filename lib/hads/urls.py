@@ -47,14 +47,13 @@ class Router:
             raise KwargsRemain
           else:
             return os.path.join(root, formatted)
+            # return formatted
       elif urlpattern.__class__ is self.__class__:
         if len(name_list) == 1:
           raise Exception("name_list must have more than 1 element")
         if urlpattern.name == name_list[0]:
-          root, kwargs = _step_format(urlpattern.root, kwargs)
-          return urlpattern.name2path(":".join(name_list[1:]), kwargs, root=os.path.join(root, urlpattern.root))
-        if path:
-          return self.root + path
+          new_root, kwargs = _step_format(urlpattern.root, kwargs)
+          return urlpattern.name2path(":".join(name_list[1:]), kwargs, root=os.path.join(root, new_root))
     raise NotMatched
   def path2view(self, abs_path=None, segments=None):
     if abs_path is not None and segments is not None:
@@ -77,11 +76,6 @@ class Router:
         raise Exception("urlpatten should be Path or Router")
     for router in routers:
       remaining_segments, kwargs = self._matching_chercker(segments, router.segments, mode="router", kwargs=kwargs)
-      print("-----------------")
-      print(remaining_segments)
-      print("-----------------")
-      print(kwargs)
-      print("-----------------")
       if remaining_segments:
         return router.path2view(segments=remaining_segments)
     raise NotMatched
