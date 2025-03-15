@@ -77,6 +77,11 @@ class Router:
         raise Exception("urlpatten should be Path or Router")
     for router in routers:
       remaining_segments, kwargs = self._matching_chercker(segments, router.segments, mode="router", kwargs=kwargs)
+      print("-----------------")
+      print(remaining_segments)
+      print("-----------------")
+      print(kwargs)
+      print("-----------------")
       if remaining_segments:
         return router.path2view(segments=remaining_segments)
     raise NotMatched
