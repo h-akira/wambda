@@ -26,8 +26,6 @@ def reverse(master, app_name, **kwargs):
     MAPPING_PATH = master.settings.MAPPING_PATH
   if MAPPING_PATH.startswith("/"):
     MAPPING_PATH = MAPPING_PATH[1:]
-  # else:
-  #   MAPPING_PATH = MAPPING_PATH
   return os.path.join("/", MAPPING_PATH, path)
 
 def static(master, file_path):
