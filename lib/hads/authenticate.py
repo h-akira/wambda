@@ -48,7 +48,7 @@ class Cognito:
       return False
     response = self._authCode2token(code, master.settings.AUTH_PAGE.get_redirect_uri(master))
     if "id_token" not in response.keys() or "access_token" not in response.keys() or "refresh_token" not in response.keys():
-      master.logger.warning("code is not found")
+      master.logger.warning("code is not found, probably expired")
       return False
     master.request.set_token(
       access_token=response['access_token'], 
