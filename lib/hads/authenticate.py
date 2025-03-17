@@ -26,19 +26,35 @@ class Cognito:
     }
     response = requests.post(url, data=data)
     return response.json()
-  def _get_decode_token(self, id_token):
-    from jwt import decode, PyJWKClient
-    jwk_client = PyJWKClient(
-      f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
-    )
-    signing_key = jwk_client.get_signing_key_from_jwt(id_token)
-    return decode(
-      id_token, 
-      signing_key.key, 
-      algorithms=['RS256'], 
-      audience=self.client_id,
-      issuer=f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}'
-    )
+  def _get_decode_token(self, id_token, veryfy=True):
+    if verify:
+      from jwt import decode, PyJWKClient
+      jwk_client = PyJWKClient(
+        f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
+      )
+      signing_key = jwk_client.get_signing_key_from_jwt(id_token)
+      return decode(
+        id_token, 
+        signing_key.key, 
+        algorithms=['RS256'], 
+        audience=self.client_id,
+        issuer=f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}'
+      )
+    else:
+      from jwt import decode
+      return decode(id_token, options={"verify_signature": False})
+  def _cal_secret_hash(self, username):
+    if username is None:
+      raise Exception("username is None")
+    import hmac
+    import hashlib
+    message = username + self.client_id
+    dig = hmac.new(
+      self.client_secret.encode('utf-8'),
+      msg=message.encode('utf-8'),
+      digestmod=hashlib.sha256
+    ).digest()
+    return base64.b64encode(dig).decode()
   def set_auth_by_code(self, master):
     if master.request.auth:
       return True
@@ -98,11 +114,13 @@ class Cognito:
       import boto3
       client = boto3.client('cognito-idp')
       try:
+        secret_hash = self._cal_secret_hash(self._get_decode_token(id_token, veryfy=False).get('cognito:username'))
         response = client.initiate_auth(
           ClientId=self.client_id,
           AuthFlow='REFRESH_TOKEN_AUTH',
           AuthParameters={
-            'REFRESH_TOKEN': refresh_token
+            'REFRESH_TOKEN': refresh_token,
+            'SECRET_HASH': secret_hash
           }
         )
         new_id_token = response['AuthenticationResult']['IdToken']
