@@ -26,7 +26,7 @@ class Cognito:
     }
     response = requests.post(url, data=data)
     return response.json()
-  def _get_decode_token(self, id_token, veryfy=True):
+  def _get_decode_token(self, id_token, verify=True):
     if verify:
       from jwt import decode, PyJWKClient
       jwk_client = PyJWKClient(
