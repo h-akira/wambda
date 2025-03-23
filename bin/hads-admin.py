@@ -34,10 +34,9 @@ This is a command line tool for managing hads project.
   )
   parser.add_argument("file", metavar="admin-file", nargs="?", help="input file")
   options = parser.parse_args()
-  if options.file is None:
-    if options.profile or options.build or options.deploy or options.static_sync2s3 or options.local_server_run:
-      print("Error: missing admin file")
-      sys.exit()
+  if options.file is None and options.init is None:
+    print("Error: missing admin file")
+    sys.exit()
   else:
     if not os.path.exists(options.file):
       print(f"Error: file '{options.file}' does not exist")
@@ -46,8 +45,13 @@ This is a command line tool for managing hads project.
 
 def main():
   options = parse_args()
+  if options.init:
+    from hads.init_option import gen_templates
+    gen_templates()
+    sys.exit()
   if options.file is None:
-    pass
+    print("Error: missing admin file")
+    sys.exit()
   else:
     # adminファイルを読み込む
     with open(options.file) as f:
