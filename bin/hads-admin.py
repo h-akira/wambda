@@ -34,9 +34,10 @@ This is a command line tool for managing hads project.
   )
   parser.add_argument("file", metavar="admin-file", nargs="?", help="input file")
   options = parser.parse_args()
-  if options.file is None and options.init is None:
-    print("Error: missing admin file")
-    sys.exit()
+  if options.file is None and options.init:
+    pass
+    # print("Error: missing admin file")
+    # sys.exit()
   else:
     if not os.path.exists(options.file):
       print(f"Error: file '{options.file}' does not exist")

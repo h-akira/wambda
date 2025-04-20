@@ -143,7 +143,7 @@ Resources:
             Action: "sts:AssumeRole"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-        - "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
+        # - "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
   # MainLayer:
   #   Type: AWS::Serverless::LayerVersion
   #   Properties:
@@ -189,7 +189,7 @@ parallel = true
 lint = true
 
 [default.deploy.parameters]
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_NAMED_IAM"
 confirm_changeset = true
 resolve_s3 = true
 region = "{REGION}"
