@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 SETTINGS_PY_TEMPLATE = """\
 import os
@@ -207,6 +208,24 @@ warm_containers = "EAGER"
 warm_containers = "EAGER"
 """
 
+ADMIN_JSON = {
+  "region": None,
+  "profile": None,
+  "static":{
+    "local": "static",
+    "s3": None
+  },
+  "local_server":{
+    "port":{
+      "static":8080,
+      "proxy":8000,
+      "sam":3000
+    }
+  }
+}
+
+
+
 def gen_templates():
   project_name = input("Enter project name (directory name): ")
   if not project_name:
@@ -256,6 +275,10 @@ def gen_templates():
     f.write(SETTINGS_PY_TEMPLATE.format(**kwargs))
   with open(os.path.join(project_name, "Lambda/project/urls.py"), "w") as f:
     f.write(URLS_PY_TEMPLATE)
+  ADMIN_JSON["region"] = region
+  with open(os.path.join(project_name, "admin.json"), "w") as f:
+    json.dump(ADMIN_JSON, f, indent=2)
+
 
 
 
