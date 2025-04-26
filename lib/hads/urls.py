@@ -110,11 +110,10 @@ class Router:
         else:
           return False, kwargs
       else:
-        if len(segments) == len(pattern_segments):
-          if segments == [""]:
-            return [""], _kwargs
-          else:
-            return False, kwargs
+        if segments == [""]:
+          return segments, _kwargs
+        elif len(segments) == len(pattern_segments):
+          return False, kwargs
         else:
           return segments[i+1:], _kwargs
 
