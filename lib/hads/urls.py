@@ -55,7 +55,7 @@ class Router:
           new_root, kwargs = _step_format(urlpattern.root, kwargs)
           return urlpattern.name2path(":".join(name_list[1:]), kwargs, root=os.path.join(root, new_root))
     raise NotMatched
-  def path2view(self, abs_path=None, segments=None):
+  def path2view(self, abs_path=None, segments=None, kwargs={}):
     if abs_path is not None and segments is not None:
       raise Exception("abs_path and segments should not be given at the same time")
     if abs_path is None and segments is None:
@@ -77,7 +77,7 @@ class Router:
     for router in routers:
       remaining_segments, kwargs = self._matching_chercker(segments, router.segments, mode="router", kwargs=kwargs)
       if remaining_segments:
-        return router.path2view(segments=remaining_segments)
+        return router.path2view(segments=remaining_segments, kwargs=kwargs)
     raise NotMatched
   def _abs_path2segments(self, abs_path):
     if abs_path:
