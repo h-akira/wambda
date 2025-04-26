@@ -83,7 +83,7 @@ class Router:
       print(segments)
       print(router.segments)
       print("------------------------")
-      if remaining_segments:
+      if remaining_segments != False:
         return router.path2view(segments=remaining_segments, kwargs=kwargs)
     raise NotMatched
   def _abs_path2segments(self, abs_path):
@@ -117,7 +117,7 @@ class Router:
         else:
           return False, kwargs
       else:
-        if segments == [""]:
+        if segments == []:
           return segments, _kwargs
         elif len(segments) == len(pattern_segments):
           return False, kwargs
