@@ -114,7 +114,7 @@ class Cognito:
       import boto3
       client = boto3.client('cognito-idp')
       try:
-        secret_hash = self._cal_secret_hash(self._get_decode_token(id_token, veryfy=False).get('cognito:username'))
+        secret_hash = self._cal_secret_hash(self._get_decode_token(id_token, verify=False).get('cognito:username'))
         response = client.initiate_auth(
           ClientId=self.client_id,
           AuthFlow='REFRESH_TOKEN_AUTH',
