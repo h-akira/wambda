@@ -44,6 +44,7 @@ class Cognito:
       from jwt import decode
       return decode(id_token, options={"verify_signature": False})
   def _cal_secret_hash(self, username):
+    import base64
     if username is None:
       raise Exception("username is None")
     import hmac
