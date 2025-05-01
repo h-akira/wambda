@@ -44,11 +44,11 @@ class Cognito:
       from jwt import decode
       return decode(id_token, options={"verify_signature": False})
   def _cal_secret_hash(self, username):
-    import base64
     if username is None:
       raise Exception("username is None")
     import hmac
     import hashlib
+    import base64
     message = username + self.client_id
     dig = hmac.new(
       self.client_secret.encode('utf-8'),
