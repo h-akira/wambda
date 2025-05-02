@@ -36,7 +36,7 @@ class Request:
   def __init__(self, event, context):
     self.method = event['requestContext']["httpMethod"]
     self.path = event['path']
-    self._set_parsed_body(self.method)
+    self._set_parsed_body(event)
     self.auth = False
     self.username = None
     self.set_cookie = False
@@ -48,9 +48,9 @@ class Request:
     self.access_token = access_token
     self.id_token = id_token
     self.refresh_token = refresh_token
-  def _set_parsed_body(self, method):
-    if method == "POST":
-      self.body = urllib.parse.parse_qs(self.event['body'])
+  def _set_parsed_body(self, event):
+    if event["requestContext"]["httpMethod"] == "POST":
+      self.body = urllib.parse.parse_qs(event['body'])
       for key, value in self.body.items():
         if len(value) == 1:
           self.body[key] = value[0]
