@@ -188,9 +188,13 @@ class Cognito:
       raise Exception("not auth")
     import boto3
     client = boto3.client('cognito-idp')
-    response = client.global_sign_out(
-      AccessToken = master.request.access_token
-    )
+    try:
+      response = client.global_sign_out(
+        AccessToken = master.request.access_token
+      )
+    except client.exceptions.NotAuthorizedException as e:
+      master.logger.error("Aready signed out")
+      master.logger.exception(e)
     if master.request.set_cookie:
       master.request.set_cookie = False
     master.request.clean_cookie = True
