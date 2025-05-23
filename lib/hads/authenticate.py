@@ -1,22 +1,52 @@
 import os
+import logging
+import hmac
+import hashlib
+import base64
+from datetime import datetime, timedelta, timezone
+from http.cookies import SimpleCookie
 
 class Cognito:
+  """
+  Amazon Cognitoを使用した認証を処理するクラス。
+  """
   def __init__(self, domain, user_pool_id: str, client_id: str, client_secret: str, region: str):
+    """
+    Args:
+        domain: Cognitoドメイン
+        user_pool_id: ユーザープールID
+        client_id: アプリクライアントID
+        client_secret: アプリクライアントシークレット
+        region: AWSリージョン
+    """
     self.domain = domain
     self.user_pool_id = user_pool_id
     self.client_id = client_id
     self.client_secret = client_secret
     self.region = region
+    self.logger = logging.getLogger(__name__)
   def _authCode2token(self, code, redirect_uri):
+    """
+    認証コードをトークンに交換します。
+    
+    Args:
+        code: 認証コード
+        redirect_uri: リダイレクトURI
+        
+    Returns:
+        トークンレスポンス（辞書）
+    """
     import requests
-    import boto3
     import base64
+    
     url = f"{self.domain}/oauth2/token"
     auth_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
+    
     headers = {
       "Content-Type": "application/x-www-form-urlencoded",
       "Authorization": f"Basic {auth_header}"
     }
+    
     data = {
       'grant_type': 'authorization_code',
       'client_id': self.client_id,
@@ -24,37 +54,72 @@ class Cognito:
       'redirect_uri': redirect_uri,
       'client_secret': self.client_secret
     }
-    response = requests.post(url, data=data)
-    return response.json()
+    
+    try:
+      response = requests.post(url, data=data)
+      response.raise_for_status()  # エラーレスポンスの場合は例外を発生
+      return response.json()
+    except requests.exceptions.RequestException as e:
+      self.logger.error(f"トークン交換エラー: {e}")
+      return {}
   def _get_decode_token(self, id_token, verify=True):
+    """
+    IDトークンをデコードします。
+    
+    Args:
+        id_token: IDトークン
+        verify: 署名を検証するかどうか
+        
+    Returns:
+        デコードされたトークン（辞書）
+    """
     if verify:
-      from jwt import decode, PyJWKClient
-      jwk_client = PyJWKClient(
-        f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
-      )
-      signing_key = jwk_client.get_signing_key_from_jwt(id_token)
-      return decode(
-        id_token, 
-        signing_key.key, 
-        algorithms=['RS256'], 
-        audience=self.client_id,
-        issuer=f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}'
-      )
+      try:
+        from jwt import decode, PyJWKClient
+        jwk_client = PyJWKClient(
+          f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
+        )
+        signing_key = jwk_client.get_signing_key_from_jwt(id_token)
+        return decode(
+          id_token, 
+          signing_key.key, 
+          algorithms=['RS256'], 
+          audience=self.client_id,
+          issuer=f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}'
+        )
+      except Exception as e:
+        self.logger.error(f"トークン検証エラー: {e}")
+        return {}
     else:
-      from jwt import decode
-      return decode(id_token, options={"verify_signature": False})
+      try:
+        from jwt import decode
+        return decode(id_token, options={"verify_signature": False})
+      except Exception as e:
+        self.logger.error(f"トークンデコードエラー: {e}")
+        return {}
   def _cal_secret_hash(self, username):
+    """
+    シークレットハッシュを計算します。
+    
+    Args:
+        username: ユーザー名
+        
+    Returns:
+        シークレットハッシュ
+        
+    Raises:
+        ValueError: ユーザー名がNoneの場合
+    """
     if username is None:
-      raise Exception("username is None")
-    import hmac
-    import hashlib
-    import base64
+      raise ValueError("ユーザー名がNoneです")
+      
     message = username + self.client_id
     dig = hmac.new(
       self.client_secret.encode('utf-8'),
       msg=message.encode('utf-8'),
       digestmod=hashlib.sha256
     ).digest()
+    
     return base64.b64encode(dig).decode()
   def set_auth_by_code(self, master):
     if master.request.auth:
@@ -142,46 +207,74 @@ class Cognito:
       master.logger.exception(e)
       return False
   def add_set_cookie_to_header(self, master, response):
-    from http.cookies import SimpleCookie
+    """
+    レスポンスヘッダーにCookieを追加します。
+    
+    Args:
+        master: Masterインスタンス
+        response: レスポンス辞書
+        
+    Returns:
+        更新されたレスポンス辞書
+    """
     cookie = SimpleCookie()
+    
     if master.request.set_cookie:
+      # 新しいCookieを設定
       cookies = []
+      
       if master.request.id_token is not None:
         cookie['id_token'] = master.request.id_token
         cookie['id_token']['httponly'] = True
         cookie['id_token']['secure'] = True
         cookie['id_token']['path'] = '/'
         cookies.append(cookie['id_token'].OutputString())
+        
       if master.request.access_token is not None:
         cookie['access_token'] = master.request.access_token
         cookie['access_token']['httponly'] = True
         cookie['access_token']['secure'] = True
         cookie['access_token']['path'] = '/'
         cookies.append(cookie['access_token'].OutputString())
+        
       if master.request.refresh_token is not None:
         cookie['refresh_token'] = master.request.refresh_token
         cookie['refresh_token']['httponly'] = True
         cookie['refresh_token']['secure'] = True
         cookie['refresh_token']['path'] = '/'
         cookies.append(cookie['refresh_token'].OutputString())
+        
     elif master.request.clean_cookie:
-      from datetime import datetime, timedelta, timezone
+      # Cookieを削除（期限切れに設定）
+      expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+      
       cookie['id_token'] = ''
-      cookie['id_token']['expires'] = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+      cookie['id_token']['expires'] = expired_date
       cookie['id_token']['path'] = '/'
+      
       cookie['access_token'] = ''
-      cookie['access_token']['expires'] = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+      cookie['access_token']['expires'] = expired_date
       cookie['access_token']['path'] = '/'
+      
       cookie['refresh_token'] = ''
-      cookie['refresh_token']['expires'] = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+      cookie['refresh_token']['expires'] = expired_date
       cookie['refresh_token']['path'] = '/'
-      cookies = [cookie['id_token'].OutputString(), cookie['access_token'].OutputString(), cookie['refresh_token'].OutputString()]
+      
+      cookies = [
+        cookie['id_token'].OutputString(), 
+        cookie['access_token'].OutputString(), 
+        cookie['refresh_token'].OutputString()
+      ]
     else:
+      # Cookieの変更なし
       return response
-    if "multiValueHeaders" in response.keys():
+      
+    # レスポンスヘッダーにCookieを追加
+    if "multiValueHeaders" in response:
       response["multiValueHeaders"]["Set-Cookie"] = cookies
     else:
       response["multiValueHeaders"] = {"Set-Cookie": cookies}
+      
     return response
   def sign_out(self, master):
     if not master.request.auth:
