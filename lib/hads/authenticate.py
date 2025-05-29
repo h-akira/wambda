@@ -72,10 +72,11 @@ class Cognito:
       id_token=response['id_token'], 
       refresh_token=response['refresh_token']
     )
-    master.request.auth = True
     master.request.set_cookie = True
     master.request.decode_token = self._get_decode_token(response['id_token'])
     master.request.username = master.request.decode_token.get('cognito:username', None)
+    if master.request.username is None:
+      return False
     master.request.auth = True
     return True
   def set_auth_by_cookie(self, master):
@@ -99,17 +100,19 @@ class Cognito:
         break
     else:
       return False
+
     from jwt import ExpiredSignatureError, InvalidTokenError
     try:
       master.request.decode_token = self._get_decode_token(id_token)
       master.request.username = master.request.decode_token.get('cognito:username', None)
+      if master.request.username is None:
+        return False
       master.request.set_token(
         access_token=access_token,
         id_token=id_token,
         refresh_token=refresh_token
       )
       master.request.auth = True
-      master.request.username = master.request.decode_token.get('cognito:username', None)
       return True
     except ExpiredSignatureError:
       import boto3
