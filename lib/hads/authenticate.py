@@ -89,6 +89,7 @@ class Cognito:
         )
       except Exception as e:
         self.logger.error(f"トークン検証エラー: {e}")
+        self.logger.exception(e)
         return {}
     else:
       try:
@@ -96,6 +97,7 @@ class Cognito:
         return decode(id_token, options={"verify_signature": False})
       except Exception as e:
         self.logger.error(f"トークンデコードエラー: {e}")
+        self.logger.exception(e)
         return {}
   def _cal_secret_hash(self, username):
     """
