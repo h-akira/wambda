@@ -204,6 +204,9 @@ class Cognito:
         )
         master.request.decode_token = self._get_decode_token(new_id_token)
         master.request.username = master.request.decode_token.get('cognito:username', None)
+        if master.request.username is None:
+          master.request.auth = False
+          master.logger.error("username is None in spite of refresh")
         master.request.auth = True
       except Exception as e:
         master.logger.exception(e)
