@@ -72,33 +72,57 @@ class Cognito:
         
     Returns:
         デコードされたトークン（辞書）
+        
+    Raises:
+        ExpiredSignatureError: トークンの有効期限が切れている場合
     """
+    
     if verify:
-      try:
-        from jwt import decode, PyJWKClient
-        jwk_client = PyJWKClient(
-          f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
-        )
-        signing_key = jwk_client.get_signing_key_from_jwt(id_token)
-        return decode(
-          id_token, 
-          signing_key.key, 
-          algorithms=['RS256'], 
-          audience=self.client_id,
-          issuer=f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}'
-        )
-      except Exception as e:
-        self.logger.error(f"トークン検証エラー: {e}")
-        self.logger.exception(e)
-        return {}
+      from jwt import decode, PyJWKClient
+      jwk_client = PyJWKClient(
+        f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
+      )
+      signing_key = jwk_client.get_signing_key_from_jwt(id_token)
+      return decode(
+        id_token, 
+        signing_key.key, 
+        algorithms=['RS256'], 
+        audience=self.client_id,
+        issuer=f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}'
+      )
     else:
-      try:
-        from jwt import decode
-        return decode(id_token, options={"verify_signature": False})
-      except Exception as e:
-        self.logger.error(f"トークンデコードエラー: {e}")
-        self.logger.exception(e)
-        return {}
+      from jwt import decode
+      return decode(id_token, options={"verify_signature": False})
+    # if verify:
+    #   try:
+    #     from jwt import decode, PyJWKClient, ExpiredSignatureError
+    #     jwk_client = PyJWKClient(
+    #       f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json'
+    #     )
+    #     signing_key = jwk_client.get_signing_key_from_jwt(id_token)
+    #     return decode(
+    #       id_token, 
+    #       signing_key.key, 
+    #       algorithms=['RS256'], 
+    #       audience=self.client_id,
+    #       issuer=f'https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}'
+    #     )
+    #   except ExpiredSignatureError as e:
+    #     # 有効期限切れは上位に伝播させる
+    #     self.logger.error(f"トークン有効期限切れ: {e}")
+    #     raise e
+    #   except Exception as e:
+    #     self.logger.error(f"トークン検証エラー: {e}")
+    #     self.logger.exception(e)
+    #     return {}
+    # else:
+    #   try:
+    #     from jwt import decode
+    #     return decode(id_token, options={"verify_signature": False})
+    #   except Exception as e:
+    #     self.logger.error(f"トークンデコードエラー: {e}")
+    #     self.logger.exception(e)
+    #     return {}
   def _cal_secret_hash(self, username):
     """
     シークレットハッシュを計算します。
@@ -207,9 +231,13 @@ class Cognito:
         if master.request.username is None:
           master.request.auth = False
           master.logger.error("username is None in spite of refresh")
+          return False
         master.request.auth = True
+        return True
       except Exception as e:
+        master.logger.error(f"Token refresh failed: {str(e)}")
         master.logger.exception(e)
+        master.request.auth = False
         return False
     except InvalidTokenError as e:
       master.logger.exception(e)
