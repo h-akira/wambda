@@ -1,4 +1,5 @@
 # HADS
+
 ## Overview
 HADS (h-akira AWS Develop with Serverless) is a framework to develop serverless web applications on AWS.  
 Although this framework is a successor to [HAD](https://github.com/h-akira/had), 
@@ -25,51 +26,57 @@ When the handler is executed, the view function is passed by the routing functio
 The view function is executed in the handler and the result is returned.
 ![lambda](images/lambda.png)  
 
-## 📚 ドキュメント
+## 📚 Documentation
 
-詳細なドキュメントは [doc](./doc/README.md) ディレクトリをご覧ください。
+**Note: All documentation is written in Japanese.**
 
-### 🚀 クイックスタート
-- [インストールと初期設定](./doc/installation.md)
-- [クイックスタートガイド](./doc/quickstart.md)
+Comprehensive documentation is available in the [doc](./doc/README.md) directory.
 
-### 📖 基本ガイド
-- [プロジェクト構造](./doc/project-structure.md)
-- [URLルーティング](./doc/url-routing.md)
-- [ビューとハンドラー](./doc/views-handlers.md)
-- [テンプレートシステム](./doc/templates.md)
+### 🚀 Getting Started
+- [Installation and Setup](./doc/installation.md)
+- [Quick Start Guide](./doc/quickstart.md)
 
-### 🔧 高度な機能
-- [認証とCognito連携](./doc/authentication.md)
-- [ローカル開発環境](./doc/local-development.md)
-- [デプロイメント](./doc/deployment.md)
+### 📖 Basic Guides
+- [Project Structure](./doc/project-structure.md)
+- [URL Routing](./doc/url-routing.md)
+- [Views and Handlers](./doc/views-handlers.md)
+- [Template System](./doc/templates.md)
+
+### 🔧 Advanced Features
+- [Authentication & Cognito Integration](./doc/authentication.md)
+- [Local Development Environment](./doc/local-development.md)
+- [Deployment Guide](./doc/deployment.md)
 
 ## Usage
 
-HADSを使った基本的な開発手順：
+Basic development workflow with HADS:
 
-1. **プロジェクト初期化**
+1. **Initialize Project**
 ```bash
 hads-admin.py --init
 ```
 
-2. **ローカル開発**
+2. **Local Development**
 ```bash
 cd my-project
 hads-admin.py admin.json --local-server-run proxy
 ```
 
-3. **AWSデプロイ**
+3. **Deploy to AWS**
 ```bash
 hads-admin.py admin.json --build --deploy
 ```
 
-詳細な使用方法については[ドキュメント](./doc/README.md)をご参照ください。
+For detailed usage instructions, please refer to the [documentation](./doc/README.md).
 
-## SampleProject
-The following is a sample project that uses HADS.
+## Sample Projects
+The following are sample projects that use HADS:
 - [HadsSampleProject](https://github.com/h-akira/HadsSampleProject)
+- [ShogiProject](https://github.com/h-akira/ShogiProject) - A comprehensive Shogi game record management system
 
 ## Development Schedule
-The following features will be added later date:
-- Genarete SAM and other templates
+The following features will be added at a later date:
+- Generate SAM and other templates
+- Enhanced error handling
+- Improved documentation
+- Additional authentication providers
