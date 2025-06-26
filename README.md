@@ -25,8 +25,46 @@ When the handler is executed, the view function is passed by the routing functio
 The view function is executed in the handler and the result is returned.
 ![lambda](images/lambda.png)  
 
+## 📚 ドキュメント
+
+詳細なドキュメントは [doc](./doc/README.md) ディレクトリをご覧ください。
+
+### 🚀 クイックスタート
+- [インストールと初期設定](./doc/installation.md)
+- [クイックスタートガイド](./doc/quickstart.md)
+
+### 📖 基本ガイド
+- [プロジェクト構造](./doc/project-structure.md)
+- [URLルーティング](./doc/url-routing.md)
+- [ビューとハンドラー](./doc/views-handlers.md)
+- [テンプレートシステム](./doc/templates.md)
+
+### 🔧 高度な機能
+- [認証とCognito連携](./doc/authentication.md)
+- [ローカル開発環境](./doc/local-development.md)
+- [デプロイメント](./doc/deployment.md)
+
 ## Usage
-Comming soon...
+
+HADSを使った基本的な開発手順：
+
+1. **プロジェクト初期化**
+```bash
+hads-admin.py --init
+```
+
+2. **ローカル開発**
+```bash
+cd my-project
+hads-admin.py admin.json --local-server-run proxy
+```
+
+3. **AWSデプロイ**
+```bash
+hads-admin.py admin.json --build --deploy
+```
+
+詳細な使用方法については[ドキュメント](./doc/README.md)をご参照ください。
 
 ## SampleProject
 The following is a sample project that uses HADS.
