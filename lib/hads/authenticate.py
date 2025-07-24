@@ -60,7 +60,7 @@ class Cognito:
       response.raise_for_status()  # エラーレスポンスの場合は例外を発生
       return response.json()
     except requests.exceptions.RequestException as e:
-      self.logger.error(f"トークン交換エラー: {e}")
+      self.logger.exception("トークン交換エラー")
       return {}
   def _get_decode_token(self, id_token, verify=True):
     """
@@ -154,7 +154,7 @@ class Cognito:
       code = master.event['queryStringParameters']['code']
     except:
       return False
-    response = self._authCode2token(code, master.settings.AUTH_PAGE.get_redirect_uri(master))
+    response = self._authCode2token(code, master.settings.AUTH_PAGE.login_redirect_uri)
     if "id_token" not in response.keys() or "access_token" not in response.keys() or "refresh_token" not in response.keys():
       master.logger.warning("code is not found, probably expired")
       return False
@@ -191,7 +191,6 @@ class Cognito:
         break
     else:
       return False
-
     from jwt import ExpiredSignatureError, InvalidTokenError
     try:
       master.request.decode_token = self._get_decode_token(id_token)
@@ -330,18 +329,9 @@ class Cognito:
 
 
 class ManagedAuthPage:
-  def __init__(self, scope, login_redirect_uri: str, local_login_redirect_uri: str=None):
+  def __init__(self, scope, login_redirect_uri: str):
     self.scope = scope
     self.login_redirect_uri = login_redirect_uri
-    self.local_login_redirect_uri = local_login_redirect_uri
-  def get_redirect_uri(self, master):
-    if master.local:
-      if self.local_login_redirect_uri is None:
-        return self.login_redirect_uri
-      else:
-        return self.local_login_redirect_uri
-    else:
-      return self.login_redirect_uri
   def get_login_url(self, master):
     return self._get_url(master, '/login')
   def get_signup_url(self, master):
@@ -352,14 +342,7 @@ class ManagedAuthPage:
       'response_type': 'code',
       'scope': self.scope,
     }
-    if master.local:
-      if self.local_login_redirect_uri is None:
-        master.logger.warning("local_login_redirect_uri is not set")
-        params['redirect_uri'] = self.login_redirect_uri
-      else:
-        params['redirect_uri'] = self.local_login_redirect_uri
-    else:
-      params['redirect_uri'] = self.login_redirect_uri
+    params['redirect_uri'] = self.login_redirect_uri
     from urllib.parse import urlencode
     query_string = urlencode(params)
     return f"{master.settings.COGNITO.domain}{path}?{query_string}"

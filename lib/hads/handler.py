@@ -47,6 +47,18 @@ class Master:
     self.logger = logging.getLogger()
     self.logger.setLevel(logging.INFO)
 
+  def _set_use_mock(self):
+    """モックを使用するかどうかを判定します。"""
+    USE_MOCK = os.getenv("USE_MOCK")
+    if USE_MOCK is None:
+      self.use_mock = False
+    elif USE_MOCK.lower() == "true":
+      self.use_mock = True
+    elif USE_MOCK.lower() == "false":
+      self.use_mock = False
+    else:
+      raise ValueError("USE_MOCKは'true'または'false'である必要があります")
+
 class Request:
   """
   HTTPリクエストを表すクラス。
