@@ -11,9 +11,9 @@ hadsの認証システムは、Amazon Cognitoをベースとしたトークン�
 - **@login_required デコレータ**: ビューレベルでの認証制御
 
 ### 1.3 hads認証の特徴
-- **パス非依存の認証処理**: 特定の`/callback`パスではなく、あらゆるパスで`code`パラメータを検出して認証処理を実行
-- **シームレスなユーザー体験**: ユーザーは元々アクセスしたかったページに直接戻される
-- **自動認証チェック**: すべてのリクエストで自動的にコード認証とCookie認証の両方をチェック
+- **外部認証との連携**: Amazon Cognitoなどの外部認証システムとの統合に特化
+- **Cookieベース認証**: トークンをHTTP-onlyセキュアCookieで管理
+- **自動トークン更新**: refresh_tokenを使用した透明なトークン更新
 
 ## 2. 認証フロー
 
@@ -34,13 +34,8 @@ sequenceDiagram
     L->>B: 302 Redirect to Cognito
     B->>C: Cognito ログインページ表示
     U->>C: ユーザー名/パスワード入力
-    C->>B: 認証コードと共にリダイレクト
-    B->>AG: GET /protected-page?code=xxx
-    AG->>L: Lambda呼び出し
-    L->>L: code パラメータを検出
-    L->>C: 認証コードをトークンに交換
-    C->>L: access_token, id_token, refresh_token
-    L->>B: Cookieセット + 元ページを表示
+    
+    Note over B,C: Cognitoで認証後、外部システムが<br/>トークンを取得してCookieをセット
     
     Note over B,L: 以降のアクセスではCookieを使用
     B->>AG: GET /any-page (Cookie付き)
@@ -88,12 +83,7 @@ class Cognito:
 
 #### 主要メソッド
 
-1. **`set_auth_by_code(master)`**
-   - あらゆるパスでクエリパラメータの`code`を検出
-   - 認証コードをトークンに交換
-   - `master.request`に認証情報を設定
-
-2. **`set_auth_by_cookie(master)`**
+1. **`set_auth_by_cookie(master)`**
    - Cookieからトークンを抽出
    - IDトークンの有効性を検証
    - 期限切れの場合はrefresh_tokenで更新
@@ -177,21 +167,21 @@ AUTH_PAGE = ManagedAuthPage(
 ### 5.2 Lambda関数での認証処理
 
 ```python
+from hads.authenticate import set_auth_by_cookie, add_set_cookie_to_header
+
 def lambda_handler(event, context):
     master = Master(event, context)
     
-    # 認証処理（あらゆるパスで実行）
-    # 1. クエリパラメータに code があれば認証コード処理
-    master.settings.COGNITO.set_auth_by_code(master)
-    # 2. Cookieがあれば既存認証の検証・更新
-    master.settings.COGNITO.set_auth_by_cookie(master)
+    # 認証処理
+    # Cookieがあれば既存認証の検証・更新
+    set_auth_by_cookie(master)
     
     # ルーティング処理
     view, kwargs = master.router.path2view(master.request.path)
     response = view(master, **kwargs)
     
     # Cookieヘッダー追加
-    master.settings.COGNITO.add_set_cookie_to_header(master, response)
+    add_set_cookie_to_header(master, response)
     
     return response
 ```

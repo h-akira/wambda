@@ -73,7 +73,6 @@ class Request:
     """
     self.method = event['requestContext']["httpMethod"]
     self.path = event['path']
-    self._set_parsed_body(event)
     
     # 認証関連の属性
     self.auth = False
@@ -84,6 +83,7 @@ class Request:
     self.id_token = None
     self.refresh_token = None
     self.decode_token = None
+    self.body = event.get('body', None)
     
   def set_token(self, access_token, id_token, refresh_token):
     """認証トークンを設定します。"""
@@ -91,14 +91,19 @@ class Request:
     self.id_token = id_token
     self.refresh_token = refresh_token
     
-  def _set_parsed_body(self, event):
-    """リクエストボディを解析します。"""
-    if event["requestContext"]["httpMethod"] == "POST" and 'body' in event:
-      self.body = urllib.parse.parse_qs(event['body'] or '')
-      # 単一値のパラメータを簡略化
-      for key, value in self.body.items():
-        if len(value) == 1:
-          self.body[key] = value[0]
+  def get_form_data(self):
+    """リクエストボディを解析してフォームデータを取得します。"""
+    form_data = {}
+    if self.method == 'POST':
+      parsed_body = urllib.parse.parse_qs(self.body)
+      if parsed_body:
+        # parse_qsの結果はリスト形式なので、単一値を取り出す
+        for key, value_list in parsed_body.items():
+          if value_list:
+              form_data[key] = value_list[0]
+      return form_data
     else:
-      self.body = None
+      raise ValueError("リクエストメソッドがPOSTではありません")
+
+
 
