@@ -59,6 +59,42 @@ class Master:
     else:
       raise ValueError("USE_MOCKは'true'または'false'である必要があります")
 
+class MultiDict:
+    """WTFormsと互換性のあるシンプルなMultiDictクラス"""
+    def __init__(self, data=None):
+        self._data = {}
+        if data:
+            for key, value_list in data.items():
+                self._data[key] = value_list
+    
+    def getlist(self, key):
+        """指定されたキーの値をリストで取得"""
+        return self._data.get(key, [])
+    
+    def get(self, key, default=None):
+        """指定されたキーの最初の値を取得"""
+        values = self.getlist(key)
+        return values[0] if values else default
+    
+    def __getitem__(self, key):
+        """指定されたキーの最初の値を取得"""
+        values = self.getlist(key)
+        if not values:
+            raise KeyError(key)
+        return values[0]
+    
+    def __contains__(self, key):
+        """キーが存在するかチェック"""
+        return key in self._data
+    
+    def keys(self):
+        """すべてのキーを取得"""
+        return self._data.keys()
+    
+    def items(self):
+        """すべてのアイテムを取得（最初の値のみ）"""
+        return [(key, self.get(key)) for key in self._data.keys()]
+
 class Request:
   """
   HTTPリクエストを表すクラス。
@@ -93,15 +129,13 @@ class Request:
     
   def get_form_data(self):
     """リクエストボディを解析してフォームデータを取得します。"""
-    form_data = {}
     if self.method == 'POST':
       parsed_body = urllib.parse.parse_qs(self.body)
       if parsed_body:
-        # parse_qsの結果はリスト形式なので、単一値を取り出す
-        for key, value_list in parsed_body.items():
-          if value_list:
-              form_data[key] = value_list[0]
-      return form_data
+        # WTFormsと互換性のあるMultiDictを作成
+        return MultiDict(parsed_body)
+      else:
+        return MultiDict()
     else:
       raise ValueError("リクエストメソッドがPOSTではありません")
 
