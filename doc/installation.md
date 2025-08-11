@@ -50,16 +50,39 @@ pip install aws-sam-cli
 
 ### 3. HADSフレームワークのインストール
 
-```bash
-pip install hads
-```
+#### PyPI登録について
 
-> **注意**: 現在HADSはまだPyPIに公開されていません。リポジトリからのインストール方法は以下の通りです：
+HADSは名前の重複により、PyPIへの登録が困難な状況です。以下の選択肢を検討中：
+
+- **現状維持**: GitHubリポジトリからの直接インストール
+- **名前変更**: 新しい名前でPyPIに登録（将来的な選択肢）
+
+#### 現在のインストール方法
+
+GitHubリポジトリから直接インストール：
 
 ```bash
+# リポジトリのクローン
 git clone https://github.com/h-akira/hads.git
 cd hads
+
+# 開発モードでインストール
 pip install -e .
+
+# または通常のインストール
+pip install .
+```
+
+#### パッケージが利用可能になるコマンド
+
+インストール後、以下のコマンドが利用可能になります：
+
+```bash
+# HADSプロジェクト管理ツール
+hads-admin.py --help
+
+# または相対パスから直接実行
+python bin/hads-admin.py --help
 ```
 
 ## AWS認証設定
