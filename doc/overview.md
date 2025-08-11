@@ -98,21 +98,9 @@ Lambda関数内部では、Djangoライクなアーキテクチャを採用し�
 
 ### HADの後継としての位置づけ
 
-HADSは[HAD](https://github.com/h-akira/had)の後継フレームワークですが、アーキテクチャ設計が大きく異なります：
-
-| 項目 | HAD | HADS |
-|------|-----|------|
-| Lambda構成 | 1機能1Lambda | 1Lambda（Lambdalithアプローチ） |
-| 内部構造 | 複雑な構造 | 簡潔で効率的な構造 |
-| 機能性 | 最小限の機能 | Djangoライクな豊富な機能 |
-| 基盤技術 | 独自実装 | SAMベースの堅牢な構成 |
-| 管理コスト | 複数Lambdaの管理が必要 | 単一Lambdaで管理が簡単 |
-| コールドスタート | 各Lambdaで個別に発生 | 1つのLambdaのみ |
-
-**HADからHADSへの進化**:
-- HADは筆者の知識が不十分だった時期に作られたため、内部構造が必要以上に複雑でした
-- HADSでは設計を見直し、より効率的で保守性の高いアーキテクチャを採用
-- 1機能1LambdaからLambdalithアプローチへの転換により、管理コストを大幅に削減
+HADSは[HAD](https://github.com/h-akira/had)の後継フレームワークですが、アーキテクチャは大きく異なります。
+HADでは1能1Lambdaで多数のLambdawを作成し、SAMを用いずCloudFormationのみデプロイされていましたが、
+HADSではLambdalithアプローチでSAMを用います。これにより、コールドスタートの抑制やコードの単純化を実現しています。
 
 ## 適用分野
 
