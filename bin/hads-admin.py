@@ -9,6 +9,7 @@ import subprocess
 import json
 import argparse
 import importlib
+import importlib.util
 import shutil
 import http.server
 import socketserver
@@ -87,7 +88,7 @@ def print_usage():
   print("  init: create hads project")
   print("  proxy: run proxy server")
   print("  static: run static server")
-  print("  get: test GET request using SAM local invoke")
+  print("  get: test request by directly executing lambda_handler")
 
 
 def init():
@@ -186,17 +187,30 @@ Run static file server for local development.
 
 def get():
   parser = argparse.ArgumentParser(description="""\
-Test GET request to Lambda function locally using SAM local invoke.
+Test request to Lambda function by directly importing and executing lambda_handler.
 """, formatter_class = argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument("--version", action="version", version='%(prog)s 0.0.1')
   parser.add_argument("-p", "--path", default="/", help="path to test (default: /)")
   parser.add_argument("-m", "--method", default="GET", help="HTTP method (default: GET)")
   parser.add_argument("-e", "--event-file", help="custom event JSON file to use for testing")
-  parser.add_argument("-t", "--template", default="template.yaml", help="SAM template file")
-  parser.add_argument("-f", "--function-name", default="MainFunction", help="Lambda function name in template")
+  parser.add_argument("-d", "--lambda-dir", default="Lambda", help="Lambda function directory (default: Lambda)")
+  parser.add_argument("-b", "--body", help="request body for POST/PUT requests")
   parser.add_argument("function", metavar="function", help="function to run")
   options = parser.parse_args()
   
+  # Check if Lambda directory exists
+  lambda_dir = os.path.abspath(options.lambda_dir)
+  lambda_file = os.path.join(lambda_dir, "lambda_function.py")
+  
+  if not os.path.exists(lambda_dir):
+    print(f"Error: Lambda directory '{lambda_dir}' does not exist")
+    sys.exit(1)
+    
+  if not os.path.exists(lambda_file):
+    print(f"Error: Lambda function file '{lambda_file}' does not exist")
+    sys.exit(1)
+  
+  # Generate event data
   if options.event_file:
     # Use custom event file
     if not os.path.exists(options.event_file):
@@ -204,9 +218,8 @@ Test GET request to Lambda function locally using SAM local invoke.
       sys.exit(1)
     
     print(f"Testing with custom event file: {options.event_file}")
-    cmd = ["sam", "local", "invoke", options.function_name, "-e", options.event_file]
-    if options.template != "template.yaml":
-      cmd.extend(["-t", options.template])
+    with open(options.event_file, 'r') as f:
+      event_data = json.load(f)
   else:
     # Generate simple event for the specified path and method
     event_data = {
@@ -214,52 +227,55 @@ Test GET request to Lambda function locally using SAM local invoke.
       "requestContext": {
         "httpMethod": options.method
       },
-      "body": None,
-      "headers": {}
+      "body": options.body,
+      "headers": {
+        "Content-Type": "application/json" if options.body else "text/html"
+      },
+      "queryStringParameters": None,
+      "pathParameters": None
     }
-    
-    # Create temporary event file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-      json.dump(event_data, f, indent=2)
-      temp_event_file = f.name
-    
     print(f"Testing {options.method} request to {options.path}")
-    cmd = ["sam", "local", "invoke", options.function_name, "-e", temp_event_file]
-    if options.template != "template.yaml":
-      cmd.extend(["-t", options.template])
   
   try:
-    # Check if SAM CLI is available
-    result = subprocess.run(["sam", "--version"], capture_output=True, text=True)
-    if result.returncode != 0:
-      print("Error: SAM CLI is not installed or not available")
-      print("Please install SAM CLI: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html")
-      sys.exit(1)
+    # Add Lambda directory to Python path
+    original_path = sys.path.copy()
+    sys.path.insert(0, lambda_dir)
     
-    # Check if template file exists
-    if not os.path.exists(options.template):
-      print(f"Error: Template file '{options.template}' does not exist")
-      sys.exit(1)
+    # Import lambda function module
+    print(f"Importing lambda_handler from {lambda_file}")
+    spec = importlib.util.spec_from_file_location("lambda_function", lambda_file)
+    lambda_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lambda_module)
     
-    # Run the SAM local invoke command
-    print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, text=True)
+    # Execute lambda_handler
+    print("Executing lambda_handler...")
+    print(f"Event: {json.dumps(event_data, indent=2)}")
+    print("-" * 50)
     
-    # Clean up temporary event file if created
-    if not options.event_file and 'temp_event_file' in locals():
-      os.unlink(temp_event_file)
+    response = lambda_module.lambda_handler(event_data, None)
     
-    if result.returncode != 0:
-      print(f"SAM local invoke failed with return code {result.returncode}")
-      sys.exit(1)
-      
-  except FileNotFoundError:
-    print("Error: SAM CLI is not installed or not in PATH")
-    print("Please install SAM CLI: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html")
+    print("Response:")
+    print(json.dumps(response, indent=2, ensure_ascii=False))
+    print("-" * 50)
+    print(f"Status Code: {response.get('statusCode', 'N/A')}")
+    
+    if 'headers' in response:
+      print("Headers:")
+      for key, value in response['headers'].items():
+        print(f"  {key}: {value}")
+    
+  except ImportError as e:
+    print(f"Error importing lambda function: {e}")
+    print("Make sure all dependencies are installed and accessible")
     sys.exit(1)
   except Exception as e:
-    print(f"Error running SAM local invoke: {e}")
+    print(f"Error executing lambda_handler: {e}")
+    import traceback
+    traceback.print_exc()
     sys.exit(1)
+  finally:
+    # Restore original Python path
+    sys.path = original_path
 
 def main():
   if len(sys.argv) == 1:

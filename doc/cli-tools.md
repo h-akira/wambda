@@ -180,7 +180,7 @@ Starting static file server on port 9090
 
 ### 4. get - Lambda関数テスト
 
-SAM Local Invokeを使用してLambda関数を直接テストします。本番環境と同等のテストを実行できます。
+lambda_function.pyを直接importしてlambda_handler関数を実行し、高速なテストを実現します。SAM CLI不要で軽量かつ高速に動作します。
 
 #### 基本使用法
 
@@ -193,6 +193,9 @@ hads-admin.py get -p /api/users -m POST
 
 # カスタムイベントファイルでテスト
 hads-admin.py get -e custom-event.json
+
+# リクエストボディを指定
+hads-admin.py get -p /api/users -m POST -b '{"name":"John","email":"john@example.com"}'
 ```
 
 #### オプション
@@ -202,8 +205,8 @@ hads-admin.py get -e custom-event.json
 | `--path` | `-p` | テストするパス | / |
 | `--method` | `-m` | HTTPメソッド | GET |
 | `--event-file` | `-e` | カスタムイベントJSONファイル | - |
-| `--template` | `-t` | SAMテンプレートファイル | template.yaml |
-| `--function-name` | `-f` | Lambda関数名 | MainFunction |
+| `--lambda-dir` | `-d` | Lambda関数ディレクトリ | Lambda |
+| `--body` | `-b` | POST/PUTリクエストのボディ | - |
 
 #### テスト実行例
 
@@ -211,17 +214,43 @@ hads-admin.py get -e custom-event.json
 # 基本テスト
 $ hads-admin.py get
 Testing GET request to /
-Running: sam local invoke MainFunction -e /tmp/event123.json
+Importing lambda_handler from /path/to/Lambda/lambda_function.py
+Executing lambda_handler...
+Event: {
+  "path": "/",
+  "requestContext": {
+    "httpMethod": "GET"
+  },
+  "body": null,
+  "headers": {
+    "Content-Type": "text/html"
+  }
+}
+--------------------------------------------------
+Response:
+{
+  "statusCode": 200,
+  "headers": {
+    "Content-Type": "text/html; charset=UTF-8"
+  },
+  "body": "<html>...</html>"
+}
+--------------------------------------------------
+Status Code: 200
 
 # APIエンドポイントテスト  
-$ hads-admin.py get -p /api/users -m POST
+$ hads-admin.py get -p /api/users -m POST -b '{"name":"John"}'
 Testing POST request to /api/users
-Running: sam local invoke MainFunction -e /tmp/event456.json
-
-# 認証が必要なページのテスト
-$ hads-admin.py get -p /dashboard -m GET
-Testing GET request to /dashboard
-Running: sam local invoke MainFunction -e /tmp/event789.json
+Importing lambda_handler from /path/to/Lambda/lambda_function.py
+Executing lambda_handler...
+Response:
+{
+  "statusCode": 201,
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"id\":1,\"name\":\"John\",\"created\":\"2023-12-01\"}"
+}
 ```
 
 #### カスタムイベントファイル
@@ -249,8 +278,44 @@ Running: sam local invoke MainFunction -e /tmp/event789.json
 # カスタムイベントでテスト
 $ hads-admin.py get -e test-user-creation.json
 Testing with custom event file: test-user-creation.json
-Running: sam local invoke MainFunction -e test-user-creation.json
+Importing lambda_handler from /path/to/Lambda/lambda_function.py
+Executing lambda_handler...
 ```
+
+#### 利点
+
+- **高速実行**: SAM CLI不要で直接実行
+- **軽量**: 依存関係が少ない
+- **デバッグ容易**: Pythonスタックトレースが直接表示
+- **詳細出力**: レスポンス内容とヘッダー情報を整形して表示
+- **Mock対応**: settings.pyのUSE_MOCK=Trueでモック環境でのテストが可能
+
+#### Mock機能との連携
+
+HADSの組み込みMock機能と連携することで、実際のAWSサービスを使用せずにテストできます：
+
+```python
+# Lambda/project/settings.py
+USE_MOCK = True  # Mock機能を有効化
+```
+
+Mock環境でのテスト例：
+
+```bash
+# Mock環境での基本テスト
+hads-admin.py get -p /
+
+# DynamoDBモックデータを使ったAPIテスト
+hads-admin.py get -p /api/users
+
+# SSM Parameter Storeモック値を使った設定テスト
+hads-admin.py get -p /config
+
+# 認証機能のモックテスト
+hads-admin.py get -p /profile
+```
+
+Mock機能の詳細については[Mock機能とテスト環境](./mock.md)を参照してください。
 
 ### 5. help - ヘルプ表示
 
@@ -263,7 +328,7 @@ Functions:
   init: create hads project  
   proxy: run proxy server
   static: run static server
-  get: test GET request using SAM local invoke
+  get: test request by directly executing lambda_handler
 ```
 
 ## 🚀 実際の開発ワークフロー

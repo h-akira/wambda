@@ -19,6 +19,7 @@ HADS (h-akira AWS Develop with Serverless) は、AWS Lambda上で動作するサ
 ### 🔧 高度な機能
 - [認証とCognito連携](./authentication.md)
 - [ローカル開発環境](./local-development.md)
+- [Mock機能とテスト環境](./mock.md)
 - [デプロイメント](./deployment.md)
 - [コマンドラインツール](./cli-tools.md)
 

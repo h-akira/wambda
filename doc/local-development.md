@@ -130,8 +130,11 @@ hads-admin.py get -p /
 hads-admin.py get -p /api/users
 hads-admin.py get -p /blog/my-post
 
-# POSTリクエストのテスト
-hads-admin.py get -p-event event.json
+# リクエストボディ付きPOSTテスト
+hads-admin.py get -p /api/users -m POST -b '{"name":"John"}'
+
+# カスタムイベントファイルでテスト
+hads-admin.py get -e event.json
 ```
 
 ### テストイベントファイル
@@ -292,6 +295,121 @@ def custom_error_render(master, error_message):
     else:
         # 本番環境では一般的なエラーページ
         return render(master, "500.html", code=500)
+```
+
+## 🎭 Mock環境での開発
+
+HADSの組み込みMock機能を使用することで、実際のAWSサービスを使用せずに開発できます。
+
+### Mock機能の有効化
+
+```python
+# Lambda/project/settings.py
+DEBUG = True      # デバッグ情報を表示
+USE_MOCK = True   # Mock機能を有効化
+NO_AUTH = True    # 認証をバイパス（開発時）
+```
+
+### Mockデータの設定
+
+プロジェクト内に`Lambda/mock/`ディレクトリを作成し、各AWSサービス用のモックデータを設定：
+
+```python
+# Lambda/mock/ssm.py
+import boto3
+
+def set_data():
+    """SSM Parameter Storeのモックデータを設定"""
+    ssm = boto3.client('ssm')
+    parameters = [
+        {
+            'Name': '/MyProject/Database/Host',
+            'Value': 'localhost',
+            'Type': 'String'
+        },
+        {
+            'Name': '/MyProject/API/Key',
+            'Value': 'mock-api-key',
+            'Type': 'SecureString'
+        }
+    ]
+    
+    for param in parameters:
+        ssm.put_parameter(
+            Name=param['Name'],
+            Value=param['Value'],
+            Type=param['Type'],
+            Overwrite=True
+        )
+```
+
+```python
+# Lambda/mock/dynamodb.py
+import boto3
+
+def set_data():
+    """DynamoDBのモックデータを設定"""
+    dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
+    
+    # テーブル作成
+    try:
+        table = dynamodb.create_table(
+            TableName='Users',
+            KeySchema=[{'AttributeName': 'user_id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'user_id', 'AttributeType': 'S'}],
+            BillingMode='PAY_PER_REQUEST'
+        )
+        table.wait_until_exists()
+        
+        # サンプルデータ投入
+        items = [
+            {'user_id': '1', 'name': 'テストユーザー1'},
+            {'user_id': '2', 'name': 'テストユーザー2'}
+        ]
+        for item in items:
+            table.put_item(Item=item)
+            
+    except Exception as e:
+        print(f"Mock setup error: {e}")
+```
+
+### Mock環境での開発ワークフロー
+
+```bash
+# 1. Mock設定の確認
+hads-admin.py get -p /debug/config  # Mock設定状況確認
+
+# 2. Mockデータを使った機能テスト
+hads-admin.py get -p /api/users      # DynamoDBモックデータ取得
+hads-admin.py get -p /config         # SSMモックパラメータ取得
+
+# 3. プロキシサーバー起動（Mock環境）
+hads-admin.py proxy                  # ブラウザでhttp://localhost:8000
+
+# 4. 開発とテストのサイクル
+# コード変更 → getコマンドでテスト → ブラウザで確認
+```
+
+### Mock環境でのデバッグ
+
+Mock機能では詳細なログが出力されます：
+
+```bash
+$ hads-admin.py get -p /api/users
+Importing lambda_handler from /path/to/Lambda/lambda_function.py
+Executing lambda_handler...
+Setting up SSM mock data...
+Set SSM parameter: /MyProject/Database/Host
+Created DynamoDB table: Users
+Inserted 2 items into Users
+Event: {
+  "path": "/api/users",
+  ...
+}
+Response: {
+  "statusCode": 200,
+  "body": "[{\"user_id\": \"1\", \"name\": \"テストユーザー1\"}]"
+}
 ```
 
 ## 🗄️ データベース開発

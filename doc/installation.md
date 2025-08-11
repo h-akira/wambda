@@ -10,12 +10,18 @@ HADSを使用するために、以下のツールがインストールされて�
 
 - **Python 3.9以上** - HADSフレームワーク本体
 - **AWS CLI** - AWSリソースの管理
-- **AWS SAM CLI** - サーバレスアプリケーションの開発・デプロイ
 - **Git** - ソースコード管理
+
+### 用途別ツール
+
+- **AWS SAM CLI** - ローカル開発サーバー（proxy）とAWSデプロイ用
+  - `hads-admin.py proxy` 使用時に必要
+  - AWS環境へのデプロイ時に必要
+  - **注意**: `hads-admin.py get` によるテストでは不要
 
 ### 推奨ツール
 
-- **Docker** - SAM Localでのローカル実行
+- **Docker** - SAM Localでのローカル実行（proxy使用時）
 - **VS Code** - Python開発に適したエディタ
 
 ## インストール手順
@@ -173,8 +179,11 @@ sam build && sam deploy sam
 ### 3. テスト用エンドポイントの確認
 
 ```bash
-# GETリクエストのテスト
-sam build && sam deploy /
+# Lambda関数の直接テスト（SAM CLI不要）
+hads-admin.py get
+
+# 特定パスのテスト
+hads-admin.py get -p /api/test
 ```
 
 ## 静的ファイルの設定

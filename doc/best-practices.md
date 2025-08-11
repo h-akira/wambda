@@ -565,6 +565,490 @@ def handler(event, context):
 
 ---
 
+## Mock機能のベストプラクティス
+
+### Mockディレクトリ構造
+
+プロジェクト内でのMock機能の標準的な構造：
+
+```
+Lambda/
+├── mock/
+│   ├── __init__.py          # 空ファイル（Pythonパッケージとして認識）
+│   ├── ssm.py              # SSM Parameter Store モック
+│   ├── dynamodb.py         # DynamoDB モック
+│   ├── s3.py               # S3 モック（必要に応じて）
+│   ├── cognito.py          # Cognito モック（必要に応じて）
+│   └── utils.py            # 共通ユーティリティ
+├── project/
+│   └── settings.py         # USE_MOCK設定
+└── lambda_function.py      # use_mock()関数
+```
+
+### Mock設定の管理
+
+#### settings.pyでの環境別設定
+
+```python
+# Lambda/project/settings.py
+import os
+
+# 環境の判定
+ENV = os.getenv('ENVIRONMENT', 'development')
+
+# 基本設定
+if ENV == 'development':
+    DEBUG = True
+    USE_MOCK = True
+    NO_AUTH = True           # 開発時は認証バイパス
+    LOG_LEVEL = 'DEBUG'
+    
+elif ENV == 'testing':
+    DEBUG = True
+    USE_MOCK = True
+    NO_AUTH = False          # テスト時は認証も検証
+    LOG_LEVEL = 'INFO'
+    
+elif ENV == 'staging':
+    DEBUG = False
+    USE_MOCK = False         # ステージング環境では実AWS使用
+    NO_AUTH = False
+    LOG_LEVEL = 'WARNING'
+    
+else:  # production
+    DEBUG = False
+    USE_MOCK = False
+    NO_AUTH = False
+    LOG_LEVEL = 'ERROR'
+
+# Mock機能の部分的制御（上級者向け）
+USE_MOCK_DYNAMODB = USE_MOCK
+USE_MOCK_SSM = USE_MOCK
+USE_MOCK_S3 = USE_MOCK
+USE_MOCK_COGNITO = USE_MOCK and NO_AUTH
+```
+
+### データ設計のベストプラクティス
+
+#### 1. 実データに近いMockデータ
+
+```python
+# Lambda/mock/dynamodb.py - 良い例
+def set_data():
+    """実際のデータ構造に近いモックデータ"""
+    users = [
+        {
+            'user_id': 'u-12345678',  # 実際のID形式に合わせる
+            'email': 'user1@example.com',
+            'name': 'テストユーザー1',
+            'created_at': '2023-12-01T00:00:00Z',
+            'updated_at': '2023-12-01T00:00:00Z',
+            'status': 'active'
+        },
+        {
+            'user_id': 'u-87654321',
+            'email': 'user2@example.com', 
+            'name': 'テストユーザー2',
+            'created_at': '2023-12-02T00:00:00Z',
+            'updated_at': '2023-12-02T00:00:00Z',
+            'status': 'inactive'  # エッジケース用データ
+        }
+    ]
+```
+
+#### 2. テストケース網羅のためのデータ
+
+```python
+# Lambda/mock/utils.py
+def generate_test_cases():
+    """様々なテストケースに対応するデータセット"""
+    return {
+        'normal_users': [
+            {'user_id': 'normal-1', 'name': '通常ユーザー1'},
+            {'user_id': 'normal-2', 'name': '通常ユーザー2'}
+        ],
+        'edge_cases': [
+            {'user_id': 'empty-name', 'name': ''},  # 空文字
+            {'user_id': 'long-name', 'name': 'a' * 255},  # 長い文字列
+            {'user_id': 'special-chars', 'name': '特殊文字@#$%'}  # 特殊文字
+        ],
+        'error_cases': [
+            {'user_id': 'invalid-data', 'status': 'corrupted'}
+        ]
+    }
+```
+
+### Mock関数の実装パターン
+
+#### 1. エラーハンドリング付きMock設定
+
+```python
+# Lambda/mock/ssm.py
+import boto3
+import logging
+
+logger = logging.getLogger(__name__)
+
+def set_data():
+    """エラー処理を含むSSMモック設定"""
+    ssm = boto3.client('ssm')
+    
+    # パラメータ定義
+    parameters = get_required_parameters()
+    
+    success_count = 0
+    error_count = 0
+    
+    for param in parameters:
+        try:
+            ssm.put_parameter(
+                Name=param['Name'],
+                Value=param['Value'],
+                Type=param['Type'],
+                Overwrite=True
+            )
+            logger.info(f"✓ Set parameter: {param['Name']}")
+            success_count += 1
+            
+        except Exception as e:
+            logger.error(f"✗ Failed to set {param['Name']}: {e}")
+            error_count += 1
+    
+    logger.info(f"SSM Mock setup: {success_count} success, {error_count} errors")
+    
+    # 設定確認
+    verify_parameters(ssm, [p['Name'] for p in parameters])
+
+def get_required_parameters():
+    """必要なパラメータの定義"""
+    return [
+        {
+            'Name': '/MyProject/Database/Host',
+            'Value': 'localhost',
+            'Type': 'String',
+            'Description': 'Database host for mock environment'
+        },
+        {
+            'Name': '/MyProject/API/Key', 
+            'Value': 'mock-api-key-12345',
+            'Type': 'SecureString',
+            'Description': 'API key for external services'
+        }
+    ]
+
+def verify_parameters(ssm, parameter_names):
+    """パラメータ設定の確認"""
+    for name in parameter_names:
+        try:
+            response = ssm.get_parameter(Name=name)
+            logger.debug(f"Verified: {name} = {response['Parameter']['Value']}")
+        except Exception as e:
+            logger.warning(f"Verification failed for {name}: {e}")
+```
+
+#### 2. DynamoDB Mock のベストプラクティス
+
+```python
+# Lambda/mock/dynamodb.py
+import boto3
+from botocore.exceptions import ResourceInUseException
+import logging
+
+logger = logging.getLogger(__name__)
+
+def set_data():
+    """DynamoDB Mock の最適化された設定"""
+    dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
+    
+    # テーブル設定を外部化
+    table_configs = get_table_configurations()
+    
+    for config in table_configs:
+        setup_table(dynamodb, config)
+
+def get_table_configurations():
+    """テーブル設定の定義"""
+    return [
+        {
+            'name': 'Users',
+            'key_schema': [
+                {'AttributeName': 'user_id', 'KeyType': 'HASH'}
+            ],
+            'attribute_definitions': [
+                {'AttributeName': 'user_id', 'AttributeType': 'S'}
+            ],
+            'global_secondary_indexes': [
+                {
+                    'IndexName': 'email-index',
+                    'KeySchema': [{'AttributeName': 'email', 'KeyType': 'HASH'}],
+                    'AttributeDefinitions': [{'AttributeName': 'email', 'AttributeType': 'S'}],
+                    'Projection': {'ProjectionType': 'ALL'}
+                }
+            ],
+            'sample_data': get_users_sample_data()
+        }
+    ]
+
+def setup_table(dynamodb, config):
+    """個別テーブルのセットアップ"""
+    table_name = config['name']
+    
+    try:
+        # テーブル作成
+        create_params = {
+            'TableName': table_name,
+            'KeySchema': config['key_schema'],
+            'AttributeDefinitions': config['attribute_definitions'],
+            'BillingMode': 'PAY_PER_REQUEST'
+        }
+        
+        # GSI設定があれば追加
+        if 'global_secondary_indexes' in config:
+            create_params['GlobalSecondaryIndexes'] = config['global_secondary_indexes']
+            # GSI用のAttributeDefinitionsも追加
+            for gsi in config['global_secondary_indexes']:
+                for attr_def in gsi.get('AttributeDefinitions', []):
+                    if attr_def not in create_params['AttributeDefinitions']:
+                        create_params['AttributeDefinitions'].append(attr_def)
+        
+        table = dynamodb.create_table(**create_params)
+        table.wait_until_exists()
+        logger.info(f"✓ Created table: {table_name}")
+        
+    except ResourceInUseException:
+        logger.info(f"→ Table already exists: {table_name}")
+        table = dynamodb.Table(table_name)
+        
+    except Exception as e:
+        logger.error(f"✗ Table creation failed: {table_name} - {e}")
+        return
+    
+    # データ投入
+    insert_sample_data(table, config['sample_data'])
+
+def insert_sample_data(table, sample_data):
+    """サンプルデータの一括投入"""
+    with table.batch_writer() as batch:
+        for item in sample_data:
+            batch.put_item(Item=item)
+    
+    logger.info(f"✓ Inserted {len(sample_data)} items into {table.name}")
+
+def get_users_sample_data():
+    """ユーザーテーブル用サンプルデータ"""
+    return [
+        {
+            'user_id': 'u-001',
+            'email': 'admin@example.com',
+            'name': '管理者',
+            'role': 'admin',
+            'created_at': '2023-01-01T00:00:00Z'
+        },
+        {
+            'user_id': 'u-002', 
+            'email': 'user1@example.com',
+            'name': '一般ユーザー1',
+            'role': 'user',
+            'created_at': '2023-01-02T00:00:00Z'
+        }
+    ]
+```
+
+### Mock機能のテスト戦略
+
+#### 1. 段階的テストアプローチ
+
+```python
+# Lambda/mock/testing_strategy.py
+class MockTestStrategy:
+    """Mock環境でのテスト戦略"""
+    
+    @staticmethod
+    def unit_test_setup():
+        """ユニットテスト用の最小限Mock"""
+        return {
+            'USE_MOCK': True,
+            'MOCK_MINIMAL': True,  # 必要最小限のみ
+            'MOCK_SERVICES': ['ssm']  # SSMのみモック
+        }
+    
+    @staticmethod
+    def integration_test_setup():
+        """統合テスト用の完全Mock"""
+        return {
+            'USE_MOCK': True,
+            'MOCK_MINIMAL': False,
+            'MOCK_SERVICES': ['ssm', 'dynamodb', 's3']
+        }
+    
+    @staticmethod
+    def e2e_test_setup():
+        """E2Eテスト用の部分Mock"""
+        return {
+            'USE_MOCK': True,
+            'MOCK_SERVICES': ['ssm'],  # 機密データのみモック
+            'REAL_SERVICES': ['dynamodb', 's3']  # 実サービスも使用
+        }
+```
+
+#### 2. CIパイプラインでのMock活用
+
+```yaml
+# .github/workflows/test.yml
+name: HADS Test Pipeline
+
+on: [push, pull_request]
+
+jobs:
+  mock-tests:
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: testing
+      USE_MOCK: true
+      
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        
+    - name: Run Mock Tests
+      run: |
+        # Mock環境でのテスト実行
+        hads-admin.py get -p /
+        hads-admin.py get -p /api/users
+        hads-admin.py get -p /api/health
+        
+    - name: Validate Mock Data
+      run: |
+        # Mockデータの整合性確認
+        python -c "
+        import sys
+        sys.path.append('Lambda')
+        from mock.ssm import set_data as setup_ssm
+        from mock.dynamodb import set_data as setup_dynamodb
+        setup_ssm()
+        setup_dynamodb()
+        print('Mock validation passed')
+        "
+```
+
+### トラブルシューティング
+
+#### 1. よくある問題と解決策
+
+```python
+# Lambda/mock/troubleshooting.py
+import boto3
+import logging
+
+logger = logging.getLogger(__name__)
+
+class MockTroubleshooter:
+    """Mock機能のトラブルシューティング"""
+    
+    @staticmethod
+    def diagnose_mock_environment():
+        """Mock環境の診断"""
+        issues = []
+        
+        # 1. moto のインポート確認
+        try:
+            from moto import mock_aws
+            logger.info("✓ moto library available")
+        except ImportError:
+            issues.append("✗ moto library not installed")
+        
+        # 2. Mock設定確認
+        try:
+            from project.settings import USE_MOCK
+            if USE_MOCK:
+                logger.info("✓ USE_MOCK is enabled")
+            else:
+                issues.append("→ USE_MOCK is disabled")
+        except ImportError:
+            issues.append("✗ Cannot import USE_MOCK from settings")
+        
+        # 3. Mock ディレクトリ確認
+        import os
+        mock_dir = os.path.join(os.path.dirname(__file__))
+        required_files = ['ssm.py', 'dynamodb.py']
+        
+        for file in required_files:
+            if os.path.exists(os.path.join(mock_dir, file)):
+                logger.info(f"✓ {file} exists")
+            else:
+                issues.append(f"✗ {file} not found in mock directory")
+        
+        return issues
+    
+    @staticmethod
+    def validate_mock_data():
+        """Mockデータの検証"""
+        results = {}
+        
+        # SSM検証
+        try:
+            ssm = boto3.client('ssm')
+            response = ssm.get_parameter(Name='/MyProject/Database/Host')
+            results['ssm'] = "✓ SSM parameters accessible"
+        except Exception as e:
+            results['ssm'] = f"✗ SSM error: {e}"
+        
+        # DynamoDB検証
+        try:
+            dynamodb = boto3.resource('dynamodb')
+            table = dynamodb.Table('Users')
+            response = table.scan(Limit=1)
+            results['dynamodb'] = f"✓ DynamoDB accessible ({response['Count']} items)"
+        except Exception as e:
+            results['dynamodb'] = f"✗ DynamoDB error: {e}"
+        
+        return results
+```
+
+#### 2. デバッグ用ヘルパー
+
+```python
+# Lambda/mock/debug.py
+def debug_mock_status():
+    """Mock機能のステータス表示"""
+    from project.settings import USE_MOCK, DEBUG
+    import os
+    
+    print("=== HADS Mock Status ===")
+    print(f"USE_MOCK: {USE_MOCK}")
+    print(f"DEBUG: {DEBUG}")
+    print(f"Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    print(f"AWS Region: {os.getenv('AWS_DEFAULT_REGION', 'ap-northeast-1')}")
+    
+    if USE_MOCK:
+        print("\n=== Mock Services ===")
+        # 各サービスの状態確認
+        diagnose_services()
+
+def diagnose_services():
+    """各AWSサービスMockの診断"""
+    services = {
+        'SSM': diagnose_ssm,
+        'DynamoDB': diagnose_dynamodb,
+        'S3': diagnose_s3
+    }
+    
+    for service_name, diagnose_func in services.items():
+        try:
+            status = diagnose_func()
+            print(f"{service_name}: {status}")
+        except Exception as e:
+            print(f"{service_name}: Error - {e}")
+```
+
 ## テスト戦略
 
 ### ユニットテスト
