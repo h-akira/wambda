@@ -38,24 +38,16 @@ static/
 
 ## ⚙️ 設定と管理
 
-### admin.json 設定
+### CLIによる設定
 
-```json
-{
-  "region": "ap-northeast-1",
-  "profile": "default",
-  "static": {
-    "local": "static",
-    "s3": "s3://your-bucket-name/static/"
-  },
-  "local_server": {
-    "port": {
-      "static": 8080,
-      "proxy": 8000,
-      "sam": 3000
-    }
-  }
-}
+静的ファイルの設定はすべてコマンドラインオプションで制御します：
+
+```bash
+# 静的ファイルサーバーの設定
+hads-admin.py static --static-dir static --static-url /static -p 8080
+
+# プロキシサーバーでの静的ファイル統合
+hads-admin.py proxy --static-dir static --static-url /static
 ```
 
 | 設定項目 | 説明 |

@@ -107,37 +107,29 @@ Enter region (default is ap-northeast-1): ap-northeast-1
 
 ```
 my-first-app/
-├── admin.json          # HADS設定ファイル
 ├── samconfig.toml      # SAM設定ファイル
 ├── template.yaml       # CloudFormationテンプレート
+├── static/            # 静的ファイルディレクトリ
 └── Lambda/
     ├── lambda_function.py     # メインハンドラー
     ├── project/
     │   ├── settings.py        # Django風設定ファイル
     │   └── urls.py           # URLルーティング
-    └── templates/            # Jinja2テンプレート
+    ├── templates/            # Jinja2テンプレート
+    └── requirements.txt      # Python依存関係
 ```
 
-### 3. admin.json の設定
+### 3. 環境設定
 
-生成された `admin.json` を環境に合わせて編集：
+環境変数でAWS認証を設定：
 
-```json
-{
-  "region": "ap-northeast-1",
-  "profile": "default",
-  "static": {
-    "local": "static",
-    "s3": "s3://your-bucket-name/static/"
-  },
-  "local_server": {
-    "port": {
-      "static": 8080,
-      "proxy": 8000,
-      "sam": 3000
-    }
-  }
-}
+```bash
+# AWSプロファイルの設定
+export AWS_PROFILE=default
+export AWS_DEFAULT_REGION=ap-northeast-1
+
+# ローカル開発時（SAM Local使用時は自動設定）
+export AWS_SAM_LOCAL=true
 ```
 
 ## 開発環境の確認

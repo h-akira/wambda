@@ -123,24 +123,9 @@ from hads.authenticate import Cognito, ManagedAuthPage
 
 # ... 他の設定 ...
 
-# Cognito設定の初期化
-if os.path.exists(os.path.join(BASE_DIR, "../admin.json")):
-    import json
-    with open(os.path.join(BASE_DIR, "../admin.json")) as f:
-        admin = json.load(f)
-    kwargs = {}
-    try:
-        kwargs["region_name"] = admin["region"]
-    except KeyError:
-        pass
-    try:
-        kwargs["profile_name"] = admin["profile"]
-    except KeyError:
-        pass
-    session = boto3.Session(**kwargs)
-    ssm = session.client('ssm')
-else:
-    ssm = boto3.client('ssm')
+# AWS Systems Manager Parameter Store設定
+# 環境変数やAWS認証情報を使用
+ssm = boto3.client('ssm')
 
 # Cognitoクライアントの設定
 COGNITO = Cognito(

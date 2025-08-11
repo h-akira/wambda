@@ -392,7 +392,7 @@ def get_users_table():
             "label": "Start Local Server",
             "type": "shell",
             "command": "hads-admin.py",
-            "args": ["admin.json", "--local-server-run", "proxy"],
+            "args": ["CLI オプション", "--local-server-run", "proxy"],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -467,7 +467,7 @@ lsof -i :8080
 kill -9 <PID>
 
 # または別のポートを使用
-# admin.jsonでポート番号を変更
+# CLI オプションでポート番号を変更
 ```
 
 #### 2. 静的ファイルが見つからない
@@ -505,8 +505,8 @@ sys.path.append(os.path.dirname(__file__))
 echo $AWS_SAM_LOCAL
 echo $AWS_DEFAULT_REGION
 
-# admin.jsonの確認
-cat admin.json | jq '.'
+# CLI オプションの確認
+cat CLI オプション | jq '.'
 
 # ログの確認
 tail -f ~/.aws/sam/logs/sam-app.log

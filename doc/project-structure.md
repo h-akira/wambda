@@ -8,7 +8,6 @@ HADSプロジェクトは以下のような構造になっています：
 
 ```
 my-hads-project/
-├── admin.json              # HADS管理設定ファイル
 ├── samconfig.toml          # SAM CLI設定ファイル
 ├── template.yaml           # CloudFormationテンプレート
 ├── static/                 # 静的ファイル
@@ -22,42 +21,13 @@ my-hads-project/
     │   ├── settings.py     # 設定ファイル
     │   ├── urls.py         # URLルーティング
     │   └── views.py        # ビュー関数
-    └── templates/          # テンプレートファイル
-        ├── base.html
-        └── index.html
+    ├── templates/          # テンプレートファイル
+    │   ├── base.html
+    │   └── index.html
+    └── requirements.txt    # Python依存関係
 ```
 
 ## 📄 設定ファイル
-
-### admin.json
-
-HADSプロジェクトの管理設定ファイルです。
-
-```json
-{
-  "region": "ap-northeast-1",
-  "profile": "default",
-  "static": {
-    "local": "static",
-    "s3": "s3://your-bucket-name/static/"
-  },
-  "local_server": {
-    "port": {
-      "static": 8080,
-      "proxy": 8000,
-      "sam": 3000
-    }
-  }
-}
-```
-
-| フィールド | 説明 |
-|------------|------|
-| `region` | AWSリージョン |
-| `profile` | AWS認証プロファイル |
-| `static.local` | ローカル静的ファイルディレクトリ |
-| `static.s3` | S3静的ファイルパス |
-| `local_server.port.*` | ローカル開発時のポート設定 |
 
 ### samconfig.toml
 
@@ -204,23 +174,8 @@ STATIC_URL = "/static"  # 先頭の/はあってもなくても同じ扱い
 TIMEZONE = "Asia/Tokyo"
 
 # AWS Systems Manager Parameter Store設定
-if os.path.exists(os.path.join(BASE_DIR, "../admin.json")):
-    import json
-    with open(os.path.join(BASE_DIR, "../admin.json")) as f:
-        admin = json.load(f)
-    kwargs = {}
-    try:
-        kwargs["region_name"] = admin["region"]
-    except KeyError:
-        pass
-    try:
-        kwargs["profile_name"] = admin["profile"]
-    except KeyError:
-        pass
-    session = boto3.Session(**kwargs)
-    ssm = session.client('ssm')
-else:
-    ssm = boto3.client('ssm')
+# 環境変数やAWS認証情報を使用
+ssm = boto3.client('ssm')
 
 # Cognito認証設定
 from hads.authenticate import Cognito, ManagedAuthPage

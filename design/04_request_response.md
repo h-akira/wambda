@@ -345,13 +345,7 @@ def lambda_handler(event, context):
 def _set_local(self):
     """ローカル開発環境かどうかを判定"""
     AWS_SAM_LOCAL = os.getenv("AWS_SAM_LOCAL")
-    if AWS_SAM_LOCAL is None:
-        # 環境変数がない場合はadmin.jsonの存在で判断
-        if os.path.isfile(os.path.join(self.settings.BASE_DIR, '../admin.json')):
-            self.local = True
-        else:
-            self.local = False
-    else:
+    if AWS_SAM_LOCAL is not None:
         if AWS_SAM_LOCAL == "true":
             self.local = True
         elif AWS_SAM_LOCAL == "false":
