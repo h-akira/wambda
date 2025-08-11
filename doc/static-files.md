@@ -88,10 +88,10 @@ if not DEBUG:
 
 ```bash
 # 静的ファイルサーバーを起動
-hads-admin.py admin.json --local-server-run static
+sam build && sam deploy static
 
 # プロキシサーバーを起動（推奨）
-hads-admin.py admin.json --local-server-run proxy
+hads-admin.py proxy
 ```
 
 ### ローカル開発の仕組み
@@ -214,7 +214,7 @@ aws s3api put-bucket-policy --bucket your-static-files-bucket --policy '{
 
 ```bash
 # 静的ファイルをS3にアップロード
-hads-admin.py admin.json --static-sync2s3
+sam build && sam deploy2s3
 
 # 手動でのアップロード
 aws s3 sync static/ s3://your-static-files-bucket/static/ --delete

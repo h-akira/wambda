@@ -148,7 +148,7 @@ my-first-app/
 cd my-first-app
 
 # SAM Local でAPIサーバーを起動
-hads-admin.py admin.json --local-server-run sam
+sam build && sam deploy sam
 ```
 
 ### 2. ブラウザでアクセス
@@ -159,7 +159,7 @@ hads-admin.py admin.json --local-server-run sam
 
 ```bash
 # GETリクエストのテスト
-hads-admin.py admin.json --test-get /
+sam build && sam deploy /
 ```
 
 ## 静的ファイルの設定
@@ -183,7 +183,7 @@ aws s3 mb s3://your-unique-bucket-name --region ap-northeast-1
 
 ```bash
 # S3に静的ファイルをアップロード
-hads-admin.py admin.json --static-sync2s3
+sam build && sam deploy2s3
 ```
 
 ## エディタの設定

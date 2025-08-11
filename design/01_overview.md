@@ -1,45 +1,66 @@
-# hads フレームワーク 基本設計書
+# HADS フレームワーク 基本設計書
 
 ## 1. 概要
 
 ### 1.1 フレームワークの目的
-hadsは、AWS Lambda上で動作するWebアプリケーションフレームワークです。以下の特徴を持ちます：
+HADSは、AWS Lambda上で動作するモダンなWebアプリケーションフレームワークです。以下の特徴を持ちます：
 
 - **サーバーレス**: AWS Lambdaで動作し、インフラストラクチャの管理が不要
-- **統合認証**: Amazon Cognitoとの統合による認証システム
+- **統合CLI**: hads-admin.py によるプロジェクト管理とローカル開発
 - **Django風の設計**: Djangoライクなルーティングとビューシステム
-- **ローカル開発サポート**: SAM Localを使用したローカル開発環境
+- **統合開発環境**: プロキシサーバーによる統合開発体験
+- **モッキング対応**: motoを使用したAWSサービスのローカルモック
 
 ### 1.2 アーキテクチャ概要
-```
-[API Gateway] → [Lambda Function] → [hads Framework]
-                                        ↓
-                                   [Router] → [Views]
-                                        ↓
-                                   [Templates] → [Response]
+
+```mermaid
+graph TD
+    A[Developer] --> B[hads-admin.py CLI]
+    B --> C[Local Development]
+    B --> D[Project Management]
+    
+    E[API Gateway] --> F[Lambda Function] 
+    F --> G[HADS Framework]
+    G --> H[Router]
+    H --> I[Views]
+    I --> J[Templates]
+    J --> K[Response]
+    
+    L[Static Files] --> M[S3/CDN]
+    C --> N[Proxy Server]
+    N --> O[SAM Local]
+    N --> P[Static Server]
 ```
 
 ### 1.3 主要コンポーネント
 
+#### フレームワーク本体
+
 1. **Handler** (`handler.py`)
-   - AWS Lambdaからのイベントを処理する中核クラス
-   - リクエスト・レスポンスの管理
+   - AWS Lambdaからのイベントを処理する中核クラス  
+   - Master、Request、MultiDict クラスによるリクエスト・レスポンス管理
 
 2. **Router** (`urls.py`)
    - URLパターンマッチングとビューへのディスパッチ
-   - Django風のURL設定
+   - Django風のURL設定システム
 
-3. **Authentication** (`authenticate.py`)
-   - Amazon Cognitoとの統合認証システム
-   - JWTトークンの管理
+3. **Authentication** (`authenticate.py`) 
+   - 認証機能のユーティリティ関数
+   - login、signup、verify などの認証操作
 
 4. **Shortcuts** (`shortcuts.py`)
    - テンプレートレンダリング、リダイレクトなどのユーティリティ関数
    - デコレータによる認証制御
 
-5. **Local Server** (`local_server.py`)
-   - ローカル開発環境での静的ファイル配信
-   - プロキシサーバー機能
+#### 開発ツール
+
+5. **CLI Tool** (`bin/hads-admin.py`)
+   - プロジェクト初期化、サーバー起動、テスト実行
+   - argparseベースのモダンなコマンドライン interface
+
+6. **Local Server** (`local_server.py`) 
+   - 統合プロキシサーバー機能
+   - 静的ファイル配信サーバー
 
 ## 2. ディレクトリ構造
 

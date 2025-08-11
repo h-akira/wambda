@@ -1,374 +1,490 @@
 # コマンドラインツール
 
-HADSは強力なコマンドラインツール `hads-admin.py` を提供し、プロジェクトの作成から本番デプロイまでを統合的に管理できます。このページでは、コマンドラインツールの詳細な使用方法を説明します。
+HADSは強力なコマンドラインツール `hads-admin.py` を提供し、プロジェクトの作成から開発、テストまでを統合的に管理できます。設定ファイルに依存しない、直感的で使いやすいコマンドライン引数ベースのインターフェースを提供します。
 
 ## 🛠️ hads-admin.py の概要
 
-`hads-admin.py` はHADSプロジェクトの中心的な管理ツールです。
+`hads-admin.py` はHADSプロジェクトの中心的な管理ツールで、以下の機能を提供します：
+
+- **プロジェクト初期化**: テンプレートベースの新規プロジェクト作成
+- **ローカル開発サーバー**: 統合プロキシサーバーと静的ファイル配信
+- **テスト機能**: SAM Local Invokeによる単体テスト
+- **ヘルプ機能**: 組み込みヘルプとサブコマンド案内
 
 ### 基本構文
 
 ```bash
-hads-admin.py [admin-file] [options]
+# 新しい構文（推奨）
+hads-admin.py <command> [options]
+
+# 利用可能なコマンド
+hads-admin.py init      # プロジェクト初期化
+hads-admin.py proxy     # プロキシサーバー起動
+hads-admin.py static    # 静的ファイルサーバー起動
+hads-admin.py get       # Lambda関数テスト
+hads-admin.py help      # ヘルプ表示
 ```
 
-- `admin-file`: プロジェクト設定ファイル（admin.json）
-- `options`: 実行する操作
+## 📋 コマンド詳細仕様
 
-## 📋 利用可能なオプション
+### 1. init - プロジェクト初期化
 
-### プロジェクト管理
+新しいHADSプロジェクトをテンプレートから作成します。
 
-#### --init: プロジェクト初期化
+#### 基本使用法
 
 ```bash
-# 新しいプロジェクトを作成
-hads-admin.py --init
+# 対話式でプロジェクト作成
+hads-admin.py init -n my-project
+
+# テンプレートを指定して作成
+hads-admin.py init -n my-project -t SSR001
 ```
 
-対話的にプロジェクト設定を入力：
-```
-Enter project name (directory name): my-app
-Enter suffix (to make resources unique, default is same as project name): my-app-prod
-Enter python version (default is 3.12): 3.12
-Enter region (default is ap-northeast-1): ap-northeast-1
-```
+#### オプション
 
-生成されるファイル：
-- `admin.json` - プロジェクト設定
-- `template.yaml` - CloudFormationテンプレート
-- `samconfig.toml` - SAM設定
-- `Lambda/` - アプリケーションコード
-- `static/` - 静的ファイル（空）
+| オプション | 短縮 | 説明 | 必須 |
+|-----------|------|------|------|
+| `--name` | `-n` | プロジェクト名（ディレクトリ名） | ✅ |
+| `--template` | `-t` | テンプレート選択（SSR001, API001） | ❌ |
 
-### ローカル開発
+#### 利用可能なテンプレート
 
-#### --local-server-run: 開発サーバー起動
+| テンプレート | 説明 |
+|-------------|------|
+| **SSR001** | Server Side Rendering Template - 認証機能付きの完全なWebアプリケーション |
+| **API001** | API Template - Vue、React、Angular等のフロントエンド向けAPI |
+
+#### 実行例
 
 ```bash
-# SAM Localサーバー
-hads-admin.py admin.json --local-server-run sam
+# 対話式選択
+$ hads-admin.py init -n blog-app
+Available templates:
+  SSR001: Server Side Rendering Template
+  API001: API Template (For Vue, React, Angular, etc.)
 
-# 静的ファイルサーバー
-hads-admin.py admin.json --local-server-run static
+Please select a template: SSR001
 
-# プロキシサーバー（推奨）
-hads-admin.py admin.json --local-server-run proxy
+# テンプレート指定
+$ hads-admin.py init -n api-server -t API001
 ```
 
-各サーバーの詳細：
+#### 生成されるファイル構造
 
-| サーバー | ポート | 説明 |
-|----------|--------|------|
-| sam | 3000 | Lambda関数をローカル実行 |
-| static | 8080 | 静的ファイル配信 |
-| proxy | 8000 | 統合エンドポイント |
+```
+my-project/
+├── Lambda/
+│   ├── lambda_function.py      # Lambda関数エントリーポイント
+│   ├── project/               # メインアプリケーション
+│   │   ├── settings.py        # 設定ファイル
+│   │   ├── urls.py           # URLルーティング
+│   │   └── views.py          # ビューハンドラー
+│   ├── templates/            # HTMLテンプレート
+│   └── requirements.txt      # Python依存関係
+├── static/                   # 静的ファイル（CSS、JS、画像）
+├── template.yaml            # SAM CloudFormationテンプレート
+├── samconfig.toml          # SAM設定ファイル
+```
 
-### テスト機能
+### 2. proxy - プロキシサーバー起動
 
-#### --test-get: GETリクエストテスト
+ローカル開発用の統合プロキシサーバーを起動します。静的ファイルとAPI リクエストを適切に転送する単一エンドポイントを提供します。
+
+#### 基本使用法
 
 ```bash
-# トップページのテスト
-hads-admin.py admin.json --test-get /
+# デフォルト設定でプロキシサーバー起動
+hads-admin.py proxy
 
-# 特定のパスをテスト
-hads-admin.py admin.json --test-get /api/users
-hads-admin.py admin.json --test-get /blog/my-post
-
-# パラメータ付きパス
-hads-admin.py admin.json --test-get /user/123/profile
+# カスタムポート設定
+hads-admin.py proxy -p 9000 -s 3001 --static-port 8081
 ```
 
-#### --test-get-event: イベントファイルでテスト
+#### オプション
+
+| オプション | 短縮 | 説明 | デフォルト |
+|-----------|------|------|-----------|
+| `--proxy-port` | `-p` | プロキシサーバーポート | 8000 |
+| `--sam-port` | `-s` | SAM Localポート | 3000 |
+| `--static-port` |  | 静的ファイルサーバーポート | 8080 |
+| `--static-url` |  | 静的ファイルURL プレフィックス | /static |
+| `--static-dir` | `-d` | 静的ファイルディレクトリ | static |
+
+#### プロキシ動作
+
+```mermaid
+graph LR
+    A[ブラウザ] --> B[プロキシサーバー:8000]
+    B --> C[SAM Local:3000]
+    B --> D[静的サーバー:8080]
+    
+    B --> E{URL判定}
+    E -->|/static/*| D
+    E -->|その他| C
+```
+
+#### 実行例
 
 ```bash
-# カスタムイベントでテスト
-hads-admin.py admin.json --test-get-event event.json
+# 基本起動
+$ hads-admin.py proxy
+Starting proxy server on port 8000
+  - Static files (/static*) -> port 8080  
+  - API requests -> port 3000
+
+# カスタム設定
+$ hads-admin.py proxy -p 9000 --static-url /assets
+Starting proxy server on port 9000
+  - Static files (/assets*) -> port 8080
+  - API requests -> port 3000
 ```
 
-イベントファイルの例：
+### 3. static - 静的ファイルサーバー起動
+
+静的ファイル（CSS、JavaScript、画像など）を配信する専用サーバーを起動します。
+
+#### 基本使用法
+
+```bash
+# デフォルト設定で起動
+hads-admin.py static
+
+# カスタム設定で起動  
+hads-admin.py static -p 8081 -d assets --static-url /files
+```
+
+#### オプション
+
+| オプション | 短縮 | 説明 | デフォルト |
+|-----------|------|------|-----------|
+| `--port` | `-p` | サーバーポート | 8080 |
+| `--static-url` |  | URL プレフィックス | /static |
+| `--static-dir` | `-d` | ファイルディレクトリ | static |
+
+#### 実行例
+
+```bash
+# 基本起動
+$ hads-admin.py static
+Starting static file server on port 8080
+  - Serving files from: /path/to/project/static
+  - URL prefix: /static
+
+# カスタム起動
+$ hads-admin.py static -p 9090 -d public --static-url /assets
+Starting static file server on port 9090
+  - Serving files from: /path/to/project/public  
+  - URL prefix: /assets
+```
+
+### 4. get - Lambda関数テスト
+
+SAM Local Invokeを使用してLambda関数を直接テストします。本番環境と同等のテストを実行できます。
+
+#### 基本使用法
+
+```bash
+# トップページのGETリクエストテスト
+hads-admin.py get
+
+# 特定のパスとメソッドをテスト
+hads-admin.py get -p /api/users -m POST
+
+# カスタムイベントファイルでテスト
+hads-admin.py get -e custom-event.json
+```
+
+#### オプション
+
+| オプション | 短縮 | 説明 | デフォルト |
+|-----------|------|------|-----------|
+| `--path` | `-p` | テストするパス | / |
+| `--method` | `-m` | HTTPメソッド | GET |
+| `--event-file` | `-e` | カスタムイベントJSONファイル | - |
+| `--template` | `-t` | SAMテンプレートファイル | template.yaml |
+| `--function-name` | `-f` | Lambda関数名 | MainFunction |
+
+#### テスト実行例
+
+```bash
+# 基本テスト
+$ hads-admin.py get
+Testing GET request to /
+Running: sam local invoke MainFunction -e /tmp/event123.json
+
+# APIエンドポイントテスト  
+$ hads-admin.py get -p /api/users -m POST
+Testing POST request to /api/users
+Running: sam local invoke MainFunction -e /tmp/event456.json
+
+# 認証が必要なページのテスト
+$ hads-admin.py get -p /dashboard -m GET
+Testing GET request to /dashboard
+Running: sam local invoke MainFunction -e /tmp/event789.json
+```
+
+#### カスタムイベントファイル
+
+複雑なテストケース用にイベントファイルを作成できます：
+
 ```json
 {
   "path": "/api/users",
   "requestContext": {
     "httpMethod": "POST"
   },
-  "body": "name=John&email=john@example.com",
+  "body": "{\"name\":\"John\",\"email\":\"john@example.com\"}",
   "headers": {
-    "Content-Type": "application/x-www-form-urlencoded"
+    "Content-Type": "application/json",
+    "Authorization": "Bearer your-token-here"
+  },
+  "queryStringParameters": {
+    "filter": "active"
   }
 }
 ```
 
-### ビルドとデプロイ
-
-#### --build: SAMビルド
-
 ```bash
-# プロジェクトをビルド
-hads-admin.py admin.json --build
-
-# 特定のプロファイルでビルド
-hads-admin.py admin.json --build --profile production
+# カスタムイベントでテスト
+$ hads-admin.py get -e test-user-creation.json
+Testing with custom event file: test-user-creation.json
+Running: sam local invoke MainFunction -e test-user-creation.json
 ```
 
-#### --deploy: デプロイ実行
+### 5. help - ヘルプ表示
+
+利用可能なコマンドとその説明を表示します。
 
 ```bash
-# 通常デプロイ（確認あり）
-hads-admin.py admin.json --deploy
-
-# 自動デプロイ（確認スキップ）
-hads-admin.py admin.json --deploy --no-confirm-changeset
-
-# ビルドとデプロイを同時実行
-hads-admin.py admin.json --build --deploy
+$ hads-admin.py help
+Usage: hads-admin <function>
+Functions:
+  init: create hads project  
+  proxy: run proxy server
+  static: run static server
+  get: test GET request using SAM local invoke
 ```
 
-#### --delete: スタック削除
+## 🚀 実際の開発ワークフロー
+
+### 新規プロジェクト作成から初回デプロイまで
 
 ```bash
-# CloudFormationスタックを削除
-hads-admin.py admin.json --delete
+# 1. プロジェクト作成
+hads-admin.py init -n my-blog-app -t SSR001
+cd my-blog-app
+
+# 2. ローカルテスト
+hads-admin.py get
+
+# 3. 開発サーバー起動
+hads-admin.py proxy  # ブラウザでhttp://localhost:8000にアクセス
+
+# 4. 開発とテスト（別ターミナル）
+hads-admin.py get -p /login
+hads-admin.py get -p /api/users -m POST
+
+# 5. AWS環境へデプロイ（SAM CLI使用）
+sam build
+sam deploy --guided
+
+# 6. 静的ファイルのS3アップロード（AWS CLI使用）
+aws s3 sync static/ s3://your-bucket/static/
 ```
 
-⚠️ **注意**: この操作は取り消せません。本番環境では特に注意してください。
-
-### 静的ファイル管理
-
-#### --static-sync2s3: S3同期
+### 日常的な開発サイクル
 
 ```bash
-# 静的ファイルをS3にアップロード
-hads-admin.py admin.json --static-sync2s3
+# 1. ローカル開発サーバー起動
+hads-admin.py proxy
+
+# 2. コード変更
+# Lambda/project/views.py を編集...
+
+# 3. 新機能のテスト
+hads-admin.py get -p /new-feature
+
+# 4. 本番デプロイ
+sam build && sam deploy
+
+# 5. 静的ファイル更新（必要に応じて）
+aws s3 sync static/ s3://your-bucket/static/
 ```
 
-内部で実行されるコマンド：
+### 複数環境での開発
+
 ```bash
+# samconfig.tomlで環境を管理
+
+# 開発環境
+sam deploy --config-env dev
+
+# ステージング環境  
+sam deploy --config-env staging
+
+# 本番環境
+sam deploy --config-env production
+```
+
+## 🔧 デプロイとAWS連携
+
+### SAM CLI との連携
+
+HADSプロジェクトのデプロイはSAM CLIを直接使用します：
+
+```bash
+# テンプレート検証
+sam validate
+
+# ビルド
+sam build
+
+# 初回デプロイ（ガイド付き）
+sam deploy --guided
+
+# 通常デプロイ
+sam deploy
+
+# ログ監視
+sam logs --name MainFunction --tail
+
+# ホットデプロイ（開発中）
+sam sync --watch
+```
+
+### AWS CLI との連携
+
+```bash
+# S3静的ファイル同期
 aws s3 sync static/ s3://your-bucket/static/ --delete
-```
-
-### AWS CLI統合
-
-#### --aws: AWS CLIコマンド実行
-
-```bash
-# S3バケット一覧
-hads-admin.py admin.json --aws s3 ls
 
 # Lambda関数一覧
-hads-admin.py admin.json --aws lambda list-functions
+aws lambda list-functions
 
-# CloudFormationスタック状態確認
-hads-admin.py admin.json --aws cloudformation describe-stacks --stack-name my-stack
+# CloudFormationスタック状態
+aws cloudformation describe-stacks --stack-name your-stack-name
+
+# ログ確認
+aws logs tail /aws/lambda/your-function-name --follow
 ```
 
-#### --sam: SAM CLIコマンド実行
-
-```bash
-# SAM validate
-hads-admin.py admin.json --sam validate
-
-# SAM logs
-hads-admin.py admin.json --sam logs --name MyFunction --tail
-
-# SAM sync（開発中のホットデプロイ）
-hads-admin.py admin.json --sam sync --watch
-```
-
-## 🔧 認証とプロファイル
+## 🔧 環境変数とプロファイル管理
 
 ### AWS認証設定
 
-#### --profile: AWSプロファイル指定
+```bash
+# プロファイル指定
+AWS_PROFILE=production sam deploy
+
+# リージョン指定
+AWS_DEFAULT_REGION=us-east-1 sam deploy
+
+# 認証情報の確認
+aws configure list
+aws configure list-profiles
+```
+
+### 環境別設定
+
+`samconfig.toml`で環境を管理：
+
+```toml
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "hads-dev"
+region = "ap-northeast-1"
+profile = "dev"
+
+[production.deploy.parameters] 
+stack_name = "hads-prod"
+region = "ap-northeast-1"
+profile = "prod"
+```
 
 ```bash
-# 開発環境プロファイル
-hads-admin.py admin.json --profile dev --deploy
-
-# 本番環境プロファイル
-hads-admin.py admin.json --profile prod --deploy
+# 環境別デプロイ
+sam deploy --config-env production
 ```
 
-#### --region: リージョン指定
+## 📝 設定ファイル管理
 
-```bash
-# 特定のリージョンでデプロイ
-hads-admin.py admin.json --region us-east-1 --deploy
+### samconfig.toml
 
-# 東京リージョン
-hads-admin.py admin.json --region ap-northeast-1 --deploy
+SAM CLI用の設定ファイルでデプロイ設定を管理：
+
+```toml
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "my-hads-app"
+region = "ap-northeast-1"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
 ```
 
-プロファイルとリージョンの優先順位：
-1. コマンドライン引数（`--profile`, `--region`）
-2. admin.jsonの設定
-3. AWS CLIのデフォルト設定
-
-## 📄 admin.json 詳細仕様
-
-### 基本構造
-
-```json
-{
-  "region": "ap-northeast-1",
-  "profile": "default",
-  "static": {
-    "local": "static",
-    "s3": "s3://your-bucket-name/static/"
-  },
-  "local_server": {
-    "port": {
-      "static": 8080,
-      "proxy": 8000,
-      "sam": 3000
-    }
-  }
-}
+[production.deploy.parameters]
+stack_name = "my-hads-app-prod"
+region = "ap-northeast-1" 
+profile = "production"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=production"
 ```
 
-### 高度な設定
+### template.yaml
 
-```json
-{
-  "region": "ap-northeast-1",
-  "profile": "production",
-  "static": {
-    "local": "static",
-    "s3": "s3://prod-bucket/static/",
-    "cloudfront": "https://d123456789.cloudfront.net"
-  },
-  "local_server": {
-    "port": {
-      "static": 8080,
-      "proxy": 8000,
-      "sam": 3000
-    },
-    "host": "0.0.0.0",
-    "cors": true
-  },
-  "deployment": {
-    "stack_name": "my-production-stack",
-    "capabilities": ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
-    "parameter_overrides": {
-      "Environment": "production",
-      "DomainName": "api.example.com"
-    }
-  },
-  "environment": {
-    "AWS_SAM_LOCAL": "false",
-    "LOG_LEVEL": "INFO"
-  }
-}
+SAM CloudFormationテンプレート：
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: HADS Serverless Application
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues: [development, staging, production]
+
+Resources:
+  MainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Lambda/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Layers:
+        - !Ref HadsLayer
+      Events:
+        ApiGateway:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: any
+  
+  HadsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${AWS::StackName}-hads-layer"
+      ContentUri: Layer/
+      CompatibleRuntimes:
+        - python3.12
 ```
 
-### 設定項目の説明
+### 主要設定項目
 
-| 項目 | 説明 | 必須 |
+| ファイル | 項目 | 説明 |
 |------|------|------|
-| `region` | AWSリージョン | ✅ |
-| `profile` | AWS認証プロファイル | ❌ |
-| `static.local` | ローカル静的ファイルパス | ✅ |
-| `static.s3` | S3静的ファイルパス | ❌ |
-| `static.cloudfront` | CloudFront URL | ❌ |
-| `local_server.port.*` | 各サーバーのポート | ✅ |
-| `deployment.stack_name` | CloudFormationスタック名 | ❌ |
-| `environment.*` | 環境変数 | ❌ |
+| samconfig.toml | `stack_name` | CloudFormationスタック名 |
+| samconfig.toml | `region` | AWSリージョン |
+| samconfig.toml | `profile` | AWS認証プロファイル |
+| template.yaml | `Runtime` | Pythonバージョン |
+| template.yaml | `Parameters` | デプロイパラメータ |
 
-## 🚀 実践的な使用例
+## 📝 シェルスクリプトと自動化
 
-### 1. 新規プロジェクト作成から初回デプロイ
-
-```bash
-# 1. プロジェクト初期化
-hads-admin.py --init
-
-# 2. プロジェクトディレクトリに移動
-cd my-new-project
-
-# 3. admin.jsonを編集（S3バケット名など）
-
-# 4. ローカルテスト
-hads-admin.py admin.json --test-get /
-
-# 5. ローカルサーバー起動
-hads-admin.py admin.json --local-server-run proxy
-
-# 6. 開発とテスト
-# ...
-
-# 7. 初回デプロイ
-hads-admin.py admin.json --build --deploy
-
-# 8. 静的ファイルアップロード
-hads-admin.py admin.json --static-sync2s3
-```
-
-### 2. 継続的開発とデプロイ
-
-```bash
-# 日常的な開発サイクル
-
-# ローカル開発
-hads-admin.py admin.json --local-server-run proxy
-
-# 変更後のテスト
-hads-admin.py admin.json --test-get /new-feature
-
-# 本番デプロイ
-hads-admin.py admin.json --build --deploy --no-confirm-changeset
-
-# 静的ファイル更新
-hads-admin.py admin.json --static-sync2s3
-```
-
-### 3. 複数環境での開発
-
-```bash
-# 開発環境
-cp admin.json admin-dev.json
-hads-admin.py admin-dev.json --profile dev --deploy
-
-# ステージング環境
-cp admin.json admin-staging.json
-hads-admin.py admin-staging.json --profile staging --deploy
-
-# 本番環境
-hads-admin.py admin.json --profile prod --deploy
-```
-
-### 4. デバッグとトラブルシューティング
-
-```bash
-# ログの確認
-hads-admin.py admin.json --sam logs --name MyFunction --tail
-
-# スタック状態の確認
-hads-admin.py admin.json --aws cloudformation describe-stacks
-
-# Lambda関数の詳細確認
-hads-admin.py admin.json --aws lambda get-function --function-name MyFunction
-
-# S3バケットの内容確認
-hads-admin.py admin.json --aws s3 ls s3://my-bucket/static/ --recursive
-```
-
-## 🔧 カスタマイズと拡張
-
-### 環境変数の設定
-
-```bash
-# 一時的な環境変数設定
-AWS_PROFILE=production hads-admin.py admin.json --deploy
-
-# 永続的な設定
-export AWS_PROFILE=production
-export AWS_DEFAULT_REGION=ap-northeast-1
-hads-admin.py admin.json --deploy
-```
-
-### シェルスクリプトでの自動化
+### デプロイスクリプト例
 
 ```bash
 #!/bin/bash
@@ -377,86 +493,109 @@ hads-admin.py admin.json --deploy
 set -e
 
 ENVIRONMENT=${1:-development}
-ADMIN_FILE="admin-${ENVIRONMENT}.json"
 
 echo "🚀 Deploying to ${ENVIRONMENT} environment..."
 
-# プロファイルの確認
-if [ "$ENVIRONMENT" = "production" ]; then
-    PROFILE="prod"
-elif [ "$ENVIRONMENT" = "staging" ]; then
-    PROFILE="staging"
-else
-    PROFILE="dev"
+# SAMデプロイ
+echo "📦 Building and deploying..."
+sam build
+sam deploy --config-env "$ENVIRONMENT"
+
+# 静的ファイル同期
+if [ -d "static" ] && [ "$(ls -A static)" ]; then
+  echo "📁 Syncing static files..."
+  BUCKET=$(aws cloudformation describe-stacks \
+    --stack-name "hads-${ENVIRONMENT}" \
+    --query 'Stacks[0].Outputs[?OutputKey==`StaticBucket`].OutputValue' \
+    --output text)
+  aws s3 sync static/ "s3://${BUCKET}/static/" --delete
 fi
-
-# ビルドとデプロイ
-echo "📦 Building..."
-hads-admin.py "$ADMIN_FILE" --profile "$PROFILE" --build
-
-echo "🚀 Deploying..."
-hads-admin.py "$ADMIN_FILE" --profile "$PROFILE" --deploy --no-confirm-changeset
-
-echo "📁 Syncing static files..."
-hads-admin.py "$ADMIN_FILE" --profile "$PROFILE" --static-sync2s3
 
 echo "✅ Deployment completed successfully!"
 ```
 
-### Makefileとの連携
+### Makefileの例
 
 ```makefile
 # Makefile
 
-ADMIN_FILE ?= admin.json
-PROFILE ?= default
-
-.PHONY: dev test build deploy sync clean
+.PHONY: dev test build deploy clean
 
 dev:
-	hads-admin.py $(ADMIN_FILE) --local-server-run proxy
+	hads-admin.py proxy
 
 test:
-	hads-admin.py $(ADMIN_FILE) --test-get /
+	hads-admin.py get
 
 build:
-	hads-admin.py $(ADMIN_FILE) --profile $(PROFILE) --build
+	sam build
 
 deploy: build
-	hads-admin.py $(ADMIN_FILE) --profile $(PROFILE) --deploy
-
-sync:
-	hads-admin.py $(ADMIN_FILE) --profile $(PROFILE) --static-sync2s3
+	sam deploy
 
 clean:
-	hads-admin.py $(ADMIN_FILE) --profile $(PROFILE) --delete
-
-full-deploy: deploy sync
+	rm -rf .aws-sam/
 
 # 環境別デプロイ
 deploy-dev:
-	$(MAKE) deploy ADMIN_FILE=admin-dev.json PROFILE=dev
+	sam deploy --config-env dev
 
 deploy-prod:
-	$(MAKE) deploy ADMIN_FILE=admin-prod.json PROFILE=prod
+	sam deploy --config-env production
+
+# 静的ファイル同期
+sync-static:
+	aws s3 sync static/ s3://your-bucket/static/ --delete
+
+# 全体デプロイ
+full-deploy: deploy sync-static
 ```
 
 ## 🐛 トラブルシューティング
 
 ### よくあるエラーと解決方法
 
-#### 1. admin.jsonが見つからない
+#### 1. SAM CLIが見つからない
 
 ```bash
-Error: file 'admin.json' does not exist
+Error: SAM CLI is not installed or not available
 ```
 
 **解決方法:**
-- ファイル名を確認
-- 正しいディレクトリにいるか確認
-- `hads-admin.py --init` でプロジェクトを初期化
+```bash
+# SAM CLIのインストール確認
+sam --version
 
-#### 2. AWS認証エラー
+# インストールされていない場合
+# macOS (Homebrew)
+brew install aws-sam-cli
+
+# Windows
+choco install aws-sam-cli
+
+# pip
+pip install aws-sam-cli
+```
+
+#### 2. テンプレートファイルが見つからない
+
+```bash
+Error: Template file 'template.yaml' does not exist
+```
+
+**解決方法:**
+```bash
+# ファイルの存在確認
+ls -la template.yaml
+
+# ファイル名を指定
+hads-admin.py get -t my-template.yaml
+
+# SAMテンプレート検証
+sam validate -t template.yaml
+```
+
+#### 3. AWS認証エラー
 
 ```bash
 Unable to locate credentials
@@ -464,61 +603,54 @@ Unable to locate credentials
 
 **解決方法:**
 ```bash
-# AWS CLIの設定確認
+# AWS認証情報の確認
 aws configure list
 
 # プロファイルの確認
 aws configure list-profiles
 
 # 認証情報の再設定
-aws configure --profile your-profile
+aws configure
 ```
 
-#### 3. SAMビルドエラー
+#### 4. ポートが使用中
 
 ```bash
-Build failed
-```
-
-**解決方法:**
-```bash
-# template.yamlの構文確認
-hads-admin.py admin.json --sam validate
-
-# 詳細なエラー確認
-hads-admin.py admin.json --sam build --debug
-```
-
-#### 4. 静的ファイル同期エラー
-
-```bash
-S3 sync failed
+Error: Address already in use
 ```
 
 **解決方法:**
 ```bash
-# S3バケットの存在確認
-hads-admin.py admin.json --aws s3 ls s3://your-bucket
+# ポート使用状況の確認
+lsof -i :8000
 
-# 権限の確認
-hads-admin.py admin.json --aws s3api get-bucket-location --bucket your-bucket
+# プロセスを終了
+kill -9 <PID>
+
+# 別のポートを使用
+hads-admin.py proxy -p 9000
+```
+
+### デバッグのコツ
+
+```bash
+# SAM Localでログを表示
+sam local start-api --log-file sam-local.log
+
+# Lambda関数のログをリアルタイムで監視
+aws logs tail /aws/lambda/your-function-name --follow
+
+# CloudWatchログの確認
+aws logs describe-log-groups
+aws logs describe-log-streams --log-group-name /aws/lambda/your-function
+
+# デバッグモードでテスト
+DEBUG=true hads-admin.py get -p /api/test
 ```
 
 ## 📋 ベストプラクティス
 
-### 1. バージョン管理
-
-```bash
-# admin.json は環境ごとに分ける
-admin-dev.json
-admin-staging.json  
-admin-prod.json
-
-# 機密情報は環境変数で管理
-export S3_BUCKET_NAME="my-prod-bucket"
-```
-
-### 2. CI/CD 連携
+### 1. CI/CD連携
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -539,8 +671,10 @@ jobs:
         with:
           python-version: '3.12'
           
-      - name: Install HADS
-        run: pip install hads
+      - name: Install dependencies
+        run: |
+          pip install aws-sam-cli
+          pip install -r requirements.txt
         
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v1
@@ -549,20 +683,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-1
           
+      - name: Test Lambda function
+        run: hads-admin.py get
+          
       - name: Deploy
         run: |
-          hads-admin.py admin-prod.json --build --deploy --no-confirm-changeset
-          hads-admin.py admin-prod.json --static-sync2s3
+          sam build
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
 ```
 
-### 3. ログ管理
+### 2. 環境別設定管理
 
 ```bash
-# ログファイルに出力
-hads-admin.py admin.json --deploy 2>&1 | tee deploy.log
+# 環境変数で管理
+export HADS_ENVIRONMENT=production
+export AWS_PROFILE=prod
 
-# 日付付きログ
-hads-admin.py admin.json --deploy 2>&1 | tee "deploy-$(date +%Y%m%d-%H%M%S).log"
+# samconfig.tomlで環境を分離
+sam deploy --config-env production
+sam deploy --config-env staging
 ```
 
 ## 次のステップ

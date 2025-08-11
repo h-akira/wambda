@@ -1,15 +1,15 @@
-# hads フレームワーク 開発環境設計書
+# HADS フレームワーク 開発環境設計書
 
 ## 1. 開発環境概要
 
 ### 1.1 開発環境構成
-hadsフレームワークは、AWS SAM (Serverless Application Model) をベースとしたローカル開発環境を提供します。
+HADSフレームワークは、SAM Local、統合プロキシサーバー、専用CLIツールによる、モダンなサーバーレス開発環境を提供します。
 
 ### 1.2 開発環境の特徴
-- **SAM Local統合**: AWS Lambda環境をローカルで再現
-- **静的ファイル配信**: 専用サーバーによる効率的な静的ファイル処理
-- **プロキシサーバー**: アプリケーションと静的ファイルの統合アクセス
-- **環境自動判定**: ローカル/本番環境の自動切り替え
+- **コマンドライン中心**: 設定ファイル不要のCLIベース管理
+- **統合プロキシサーバー**: SAM LocalとStatic Serverを統合したワンストップ開発環境
+- **テスト機能内蔵**: SAM Local Invokeによる単体テスト機能
+- **環境自動判定**: 環境変数ベースの自動環境切り替え
 
 ## 2. 開発環境アーキテクチャ
 
@@ -17,26 +17,42 @@ hadsフレームワークは、AWS SAM (Serverless Application Model) をベー�
 
 ```mermaid
 graph TD
-    A[Developer] --> B[Browser]
-    B --> C[Proxy Server<br/>Port 8000]
-    C --> D{Request Type}
-    D -->|Static Files<br/>/static/*| E[Static Server<br/>Port 8080]
-    D -->|Application<br/>Other paths| F[SAM Local<br/>Port 3000]
-    F --> G[Lambda Function]
-    G --> H[hads Framework]
-    E --> I[Static Files]
+    A[Developer] --> B[hads-admin.py CLI]
+    B --> C[Command Router]
     
-    J[Admin.json] --> K[Local Config]
-    K --> F
+    C -->|init| D[Project Template]
+    C -->|proxy| E[Proxy Server<br/>Port 8000]
+    C -->|static| F[Static Server<br/>Port 8080] 
+    C -->|get| G[SAM Local Invoke<br/>Test Runner]
+    
+    E --> H{Request Type}
+    H -->|Static Files<br/>/static/*| F
+    H -->|Application<br/>Other paths| I[SAM Local<br/>Port 3000]
+    
+    I --> J[Lambda Function]
+    J --> K[HADS Framework]
+    F --> L[Static Files]
+    
+    M[Environment Variables] --> N[Runtime Config]
+    N --> I
 ```
 
-### 2.2 サーバー構成
+### 2.2 CLIコマンド構成
 
-| サーバー | ポート | 役割 | 説明 |
-|---------|--------|------|------|
-| プロキシサーバー | 8000 | 統合エントリーポイント | リクエストを適切なサーバーに振り分け |
-| SAM Local | 3000 | アプリケーション | Lambda関数とAPI Gatewayを模擬 |
-| 静的ファイルサーバー | 8080 | 静的ファイル配信 | CSS, JS, 画像などの配信 |
+| コマンド | 機能 | 説明 |
+|---------|------|------|
+| `hads-admin.py init` | プロジェクト初期化 | テンプレートベースの新規プロジェクト作成 |
+| `hads-admin.py proxy` | 統合プロキシサーバー | SAM Local + Static Serverの統合エンドポイント |
+| `hads-admin.py static` | 静的ファイルサーバー | CSS, JS, 画像などの専用配信サーバー |
+| `hads-admin.py get` | テスト実行 | SAM Local Invokeによる単体テスト |
+
+### 2.3 サーバー構成
+
+| サーバー | ポート | 起動方法 | 説明 |
+|---------|--------|---------|------|
+| プロキシサーバー | 8000 | `hads-admin.py proxy` | 統合開発エンドポイント |
+| SAM Local | 3000 | `sam local start-api` | Lambda関数とAPI Gateway模擬 |
+| 静的ファイルサーバー | 8080 | `hads-admin.py static` | 静的ファイル専用配信 |
 
 ## 3. ローカルサーバー詳細
 
@@ -110,24 +126,24 @@ def run_proxy_server(static_url, port=8000, sam_port=3000, static_port=8080):
 
 ## 4. 環境判定システム
 
-### 4.1 ローカル環境判定ロジック
+### 4.1 環境判定ロジック
 
 ```python
 def _set_local(self):
     """ローカル開発環境かどうかを判定"""
     AWS_SAM_LOCAL = os.getenv("AWS_SAM_LOCAL")
     
-    if AWS_SAM_LOCAL is None:
-        # 環境変数がない場合はadmin.jsonの存在で判断
-        admin_json_path = os.path.join(self.settings.BASE_DIR, '../admin.json')
-        self.local = os.path.isfile(admin_json_path)
-    else:
+    if AWS_SAM_LOCAL is not None:
+        # 環境変数による判定（優先）
         if AWS_SAM_LOCAL == "true":
             self.local = True
         elif AWS_SAM_LOCAL == "false":
             self.local = False
         else:
             raise ValueError("AWS_SAM_LOCALは'true'または'false'である必要があります")
+    else:
+        # 環境変数がない場合はデフォルトで本番環境
+        self.local = False
 ```
 
 ### 4.2 判定基準
@@ -136,50 +152,66 @@ def _set_local(self):
 |---------|------|------|
 | 環境変数 | `AWS_SAM_LOCAL=true` | ローカル環境 |
 | 環境変数 | `AWS_SAM_LOCAL=false` | 本番環境 |
-| ファイル存在 | `admin.json` ファイルが存在 | ローカル環境 |
-| デフォルト | 上記すべて該当しない | 本番環境 |
+| デフォルト | 環境変数が設定されていない | 本番環境 |
+
+### 4.3 環境変数の設定方法
+
+```bash
+# ローカル開発時（SAM Local使用時は自動設定）
+export AWS_SAM_LOCAL=true
+
+# 本番環境（明示的に設定）
+export AWS_SAM_LOCAL=false
+```
 
 ## 5. 設定管理
 
-### 5.1 admin.json 設定ファイル
+### 5.1 コマンドライン引数による設定
 
-```json
-{
-    "region": "ap-northeast-1",
-    "profile": "default"
-}
+HADSは設定ファイルに依存せず、すべてコマンドライン引数で設定を管理します：
+
+```bash
+# プロキシサーバーのポート設定
+hads-admin.py proxy -p 9000 -s 3001 --static-port 8081
+
+# 静的ファイルディレクトリの指定
+hads-admin.py static -d assets --static-url /files
+
+# テンプレート指定でプロジェクト作成
+hads-admin.py init -n my-app -t SSR001
 ```
 
-#### 用途
-- **AWS認証情報**: ローカル開発時のAWSプロファイル指定
-- **リージョン設定**: AWS サービスの利用リージョン
-- **環境判定**: ファイルの存在によるローカル環境判定
+### 5.2 環境変数による設定
 
-### 5.2 環境別設定の切り替え
+実行時設定は環境変数で管理：
 
-```python
-# settings.py での環境別設定
-if os.path.exists(os.path.join(BASE_DIR, "../admin.json")):
-    # ローカル環境の設定
-    import json
-    with open(os.path.join(BASE_DIR, "../admin.json")) as f:
-        admin = json.load(f)
-    
-    kwargs = {}
-    try:
-        kwargs["region_name"] = admin["region"]
-    except KeyError:
-        pass
-    try:
-        kwargs["profile_name"] = admin["profile"]
-    except KeyError:
-        pass
-    
-    session = boto3.Session(**kwargs)
-    ssm = session.client('ssm')
-else:
-    # 本番環境の設定
-    ssm = boto3.client('ssm')
+```bash
+# AWSプロファイル指定
+export AWS_PROFILE=development
+
+# AWSリージョン指定
+export AWS_DEFAULT_REGION=ap-northeast-1
+
+# ローカル環境指定
+export AWS_SAM_LOCAL=true
+```
+
+### 5.3 SAM設定ファイル（samconfig.toml）
+
+デプロイ設定は`samconfig.toml`で管理：
+
+```toml
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "hads-dev"
+region = "ap-northeast-1"
+capabilities = "CAPABILITY_IAM"
+
+[production.deploy.parameters]
+stack_name = "hads-prod"
+region = "ap-northeast-1"
+profile = "production"
 ```
 
 ### 5.3 URL/パス設定の環境対応
@@ -206,35 +238,47 @@ def reverse(master, app_name, **kwargs):
 
 ## 6. 開発ワークフロー
 
-### 6.1 プロジェクト初期化
+### 6.1 新規プロジェクト作成
 
 ```bash
-# 1. SAMテンプレートの作成
-sam init --runtime python3.12 --name my-hads-app
+# 1. HADSプロジェクトの初期化
+hads-admin.py init -n my-blog-app -t SSR001
 
-# 2. hads依存関係の追加
-echo "hads" >> requirements.txt
+# 2. プロジェクトディレクトリに移動
+cd my-blog-app
 
-# 3. プロジェクト構造の作成
-mkdir -p Lambda/project
-mkdir -p Lambda/templates
-mkdir -p static
+# 3. 初期テスト実行
+hads-admin.py get
 
-# 4. 設定ファイルの作成
-cp admin.json.example admin.json
+# 4. 統合開発サーバー起動
+hads-admin.py proxy
 ```
 
-### 6.2 ローカル開発サーバー起動
+### 6.2 日常的な開発サイクル
 
 ```bash
-# 1. SAM Local の起動
+# 1. 統合プロキシサーバー起動
+hads-admin.py proxy
+
+# 2. 別ターミナルでSAM Local起動
 sam local start-api --port 3000
 
-# 2. 静的ファイルサーバーの起動 (別ターミナル)
-python -c "from hads.local_server import run_static_server; run_static_server('/static', 'static', 8080)"
+# 3. 開発とテスト
+# コード編集...
+hads-admin.py get -p /new-feature
 
-# 3. プロキシサーバーの起動 (別ターミナル)
-python -c "from hads.local_server import run_proxy_server; run_proxy_server('/static', 8000, 3000, 8080)"
+# 4. 本番デプロイ
+sam build && sam deploy
+```
+
+### 6.3 個別サーバー起動（デバッグ用）
+
+```bash
+# 静的ファイルサーバーのみ
+hads-admin.py static
+
+# カスタム設定で起動
+hads-admin.py proxy -p 9000 --static-port 8081
 ```
 
 ### 6.3 開発時のURL構成
@@ -359,25 +403,43 @@ def do_GET(self):
 
 1. **ポート競合**
    - 他のプロセスがポート使用中
-   - 解決: `lsof -i :8000` でプロセス確認
+   - 解決: `lsof -i :8000` でプロセス確認、または別ポート使用
 
 2. **静的ファイル404エラー**
    - パスマッピングの設定ミス
-   - 解決: `STATIC_URL` 設定の確認
+   - 解決: `--static-url` オプションの確認
 
-3. **認証エラー**
-   - admin.json の設定不備
-   - 解決: AWS認証情報の確認
+3. **AWS認証エラー**
+   - AWS認証情報の設定不備
+   - 解決: `aws configure` または環境変数の設定確認
 
-### 10.2 ログ確認手順
+4. **SAM Local起動エラー**
+   - SAM CLIのインストール不備
+   - 解決: `sam --version` で確認、必要に応じて再インストール
+
+### 10.2 デバッグとログ確認
 
 ```bash
-# SAM Local のログ
+# SAM Local のログ出力
 sam local start-api --port 3000 --log-file sam.log
 
-# Lambda関数のログ
-tail -f sam.log | grep "lambda_handler"
+# テスト実行でのデバッグ
+hads-admin.py get -p /debug-endpoint
 
 # プロキシサーバーのログ
-# コンソール出力を確認
+# hads-admin.py proxy の出力をそのまま確認
+
+# 環境変数でのデバッグ設定
+export DEBUG=true
+hads-admin.py proxy
+```
+
+### 10.3 パフォーマンス最適化
+
+```bash
+# 開発時のキャッシュ無効化
+hads-admin.py proxy --no-cache
+
+# 静的ファイルの高速配信
+hads-admin.py static --static-dir public
 ``` 

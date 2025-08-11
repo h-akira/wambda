@@ -489,14 +489,14 @@ document.addEventListener('DOMContentLoaded', function() {
 ### 1. SAM Local でテスト
 
 ```bash
-# SAMサーバーを起動（別ターミナル）
-hads-admin.py admin.json --local-server-run sam
+# SAM Localを起動（別ターミナル）
+sam local start-api --port 3000
 
-# 静的ファイルサーバーを起動（別ターミナル）
-hads-admin.py admin.json --local-server-run static
+# 統合プロキシサーバーを起動（推奨）
+hads-admin.py proxy
 
-# プロキシサーバーを起動（メインターミナル）
-hads-admin.py admin.json --local-server-run proxy
+# または個別にサーバーを起動する場合:
+# hads-admin.py static    # 静的ファイルサーバーのみ
 ```
 
 ### 2. ブラウザでアクセス
@@ -507,36 +507,35 @@ hads-admin.py admin.json --local-server-run proxy
 
 ```bash
 # トップページのテスト
-hads-admin.py admin.json --test-get /
+hads-admin.py get
 
 # 特定パスのテスト
-hads-admin.py admin.json --test-get /add
+hads-admin.py get -p /add
 ```
 
 ## ☁️ AWSへのデプロイ
 
-### 1. ビルド
+### 1. ビルドとデプロイ
 
 ```bash
-hads-admin.py admin.json --build
+# ビルド
+sam build
+
+# 初回デプロイ（ガイド付き）
+sam deploy --guided
+
+# 通常のデプロイ
+sam deploy
 ```
 
-### 2. 初回デプロイ
+### 2. 静的ファイルのアップロード
 
 ```bash
-hads-admin.py admin.json --deploy
-```
-
-デプロイ確認画面で `y` を入力してデプロイを実行
-
-### 3. 静的ファイルのアップロード
-
-```bash
-# S3バケットを作成（admin.jsonで設定済みの場合）
+# S3バケットを作成
 aws s3 mb s3://your-todo-app-static --region ap-northeast-1
 
-# admin.jsonのS3パスを更新後
-hads-admin.py admin.json --static-sync2s3
+# 静的ファイルのアップロード
+aws s3 sync static/ s3://your-todo-app-static/static/
 ```
 
 ### 4. デプロイ後の確認
@@ -549,14 +548,14 @@ hads-admin.py admin.json --static-sync2s3
 
 ```bash
 # 変更後にビルド・デプロイ
-hads-admin.py admin.json --build --deploy --no-confirm-changeset
+sam build && sam deploy --no-confirm-changeset
 ```
 
 ### 静的ファイルの更新
 
 ```bash
 # S3に静的ファイルを同期
-hads-admin.py admin.json --static-sync2s3
+aws s3 sync static/ s3://your-todo-app-static/static/
 ```
 
 ## 🎉 完成！

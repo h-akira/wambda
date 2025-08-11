@@ -34,74 +34,62 @@ HADSのローカル開発環境は3つのサーバーで構成されています
 
 ```bash
 # プロキシサーバーを起動（他のサーバーも自動起動）
-hads-admin.py admin.json --local-server-run proxy
+hads-admin.py proxy
 ```
 
 ### 個別起動
 
 ```bash
 # ターミナル1: SAM Local
-hads-admin.py admin.json --local-server-run sam
+sam local start-api
 
 # ターミナル2: 静的ファイルサーバー
-hads-admin.py admin.json --local-server-run static
+hads-admin.py static
 
 # ターミナル3: プロキシサーバー
-hads-admin.py admin.json --local-server-run proxy
+hads-admin.py proxy
 ```
 
-## ⚙️ admin.json の詳細設定
+## ⚙️ CLIオプションによる詳細設定
 
-### 基本設定
+### ポート設定
 
-```json
-{
-  "region": "ap-northeast-1",
-  "profile": "default",
-  "static": {
-    "local": "static",
-    "s3": "s3://your-bucket-name/static/"
-  },
-  "local_server": {
-    "port": {
-      "static": 8080,
-      "proxy": 8000,
-      "sam": 3000
-    }
-  }
-}
+```bash
+# プロキシサーバーのカスタムポート設定
+hads-admin.py proxy -p 9000 -s 3001 --static-port 8081
+
+# 静的ファイルサーバーのカスタム設定
+hads-admin.py static -p 8090 -d assets --static-url /files
 ```
 
-### 高度な設定
+### 環境変数による設定
 
-```json
-{
-  "region": "ap-northeast-1",
-  "profile": "development",
-  "static": {
-    "local": "static",
-    "s3": "s3://your-bucket-name/static/"
-  },
-  "local_server": {
-    "port": {
-      "static": 8080,
-      "proxy": 8000,
-      "sam": 3000
-    },
-    "host": "0.0.0.0",
-    "debug": true,
-    "auto_reload": true,
-    "cors": {
-      "enabled": true,
-      "origins": ["http://localhost:3000", "http://127.0.0.1:3000"]
-    }
-  },
-  "environment": {
-    "AWS_SAM_LOCAL": "true",
-    "DEBUG": "true",
-    "LOG_LEVEL": "INFO"
-  }
-}
+```bash
+# AWS認証設定
+export AWS_PROFILE=development
+export AWS_DEFAULT_REGION=ap-northeast-1
+
+# デバッグ設定
+export DEBUG=true
+export LOG_LEVEL=INFO
+
+# SAM Local設定（自動設定されるが明示的に指定可能）
+export AWS_SAM_LOCAL=true
+```
+
+### samconfig.tomlによる環境設定
+
+```toml
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "hads-dev"
+region = "ap-northeast-1"
+
+[production.deploy.parameters]
+stack_name = "hads-prod"
+region = "ap-northeast-1"
+profile = "production"
 ```
 
 ## 🔧 効率的な開発ワークフロー
@@ -110,7 +98,7 @@ hads-admin.py admin.json --local-server-run proxy
 
 ```bash
 # ファイル変更を監視してSAMを自動再起動
-hads-admin.py admin.json --local-server-run sam --watch
+sam local start-api --watch
 
 # 静的ファイルの変更を監視
 npm run watch  # package.jsonで設定
@@ -119,14 +107,17 @@ npm run watch  # package.jsonで設定
 ### 複数環境での開発
 
 ```bash
-# 開発環境
-cp admin.json admin-dev.json
-hads-admin.py admin-dev.json --local-server-run proxy
+# 環境変数で環境を切り替え
+export AWS_PROFILE=development
+hads-admin.py proxy
 
-# ステージング環境
-cp admin.json admin-staging.json
-# admin-staging.jsonを編集
-hads-admin.py admin-staging.json --local-server-run proxy
+# 異なる環境での実行
+export AWS_PROFILE=staging
+hads-admin.py proxy -p 9000
+
+# samconfig.tomlで環境別デプロイ
+sam deploy --config-env development
+sam deploy --config-env production
 ```
 
 ## 🧪 テスト機能
@@ -135,12 +126,12 @@ hads-admin.py admin-staging.json --local-server-run proxy
 
 ```bash
 # GETリクエストのテスト
-hads-admin.py admin.json --test-get /
-hads-admin.py admin.json --test-get /api/users
-hads-admin.py admin.json --test-get /blog/my-post
+hads-admin.py get -p /
+hads-admin.py get -p /api/users
+hads-admin.py get -p /blog/my-post
 
 # POSTリクエストのテスト
-hads-admin.py admin.json --test-get-event event.json
+hads-admin.py get -p-event event.json
 ```
 
 ### テストイベントファイル
@@ -489,7 +480,7 @@ ls -la static/
 chmod -R 755 static/
 
 # プロキシサーバーの再起動
-hads-admin.py admin.json --local-server-run proxy
+hads-admin.py proxy
 ```
 
 #### 3. Lambda関数のインポートエラー
@@ -556,7 +547,7 @@ echo "All checks passed. Committing..."
 .PHONY: dev test build deploy clean
 
 dev:
-	hads-admin.py admin.json --local-server-run proxy
+	hads-admin.py proxy
 
 test:
 	python -m pytest tests/ -v
