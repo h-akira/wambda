@@ -407,12 +407,8 @@ def _generate_no_auth_cookies(master):
     """
     username = master.request.username
     
-    # 有効期限を設定（7日後）
-    expires = datetime.now(timezone.utc) + timedelta(days=7)
-    expires_str = expires.strftime('%a, %d %b %Y %H:%M:%S GMT')
-    
-    # NO_AUTHモード用のシンプルなCookie
-    cookie = f"no_auth_user={username}; Path=/; Expires={expires_str}; HttpOnly; SameSite=Lax"
+    # NO_AUTHモード用のシンプルなCookie（期限なし）
+    cookie = f"no_auth_user={username}; Path=/; HttpOnly; SameSite=Lax"
     
     # ローカル環境でない場合はSecureフラグを追加
     if not master.local:
@@ -622,9 +618,8 @@ def _generate_clear_cookies():
     ]
 
 def _generate_no_auth_clear_cookies():
-    """NO_AUTHモード用のCookie削除用の期限切れCookieを生成"""
-    expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
-    return [f"no_auth_user=; Path=/; Expires={expired_date}; HttpOnly; SameSite=Lax"]
+    """NO_AUTHモード用のCookie削除"""
+    return ["no_auth_user=; Path=/; HttpOnly; SameSite=Lax"]
 
 def _generate_url_from_setting(master, setting_name):
     """
