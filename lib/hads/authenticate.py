@@ -340,7 +340,7 @@ def _set_no_auth_mode(master):
         master: Masterインスタンス
         
     Returns:
-        bool: 常にTrue（認証成功）
+        bool: 認証成功の場合True
     """
     # Cookieから簡易認証情報を取得
     username = _extract_no_auth_username_from_cookie(master)
@@ -349,23 +349,8 @@ def _set_no_auth_mode(master):
     if not username:
         return False
     
-    # 簡易認証情報を設定（トークンはすべてユーザー名と同じ）
-    master.request.set_token(
-        access_token=username,
-        id_token=username,
-        refresh_token=username
-    )
-    
-    # ユーザー情報を設定
-    master.request.username = username
-    master.request.auth = True
-    master.request.decode_token = {
-        'cognito:username': username,
-        'email': f'{username}@example.com',
-        'sub': f'test-{username}-uuid'
-    }
-    
-    return True
+    # 共通の認証設定関数を使用
+    return _set_no_auth_credentials(master, username, set_cookie=False)
 
 def _extract_no_auth_username_from_cookie(master):
     """
@@ -430,24 +415,8 @@ def no_auth_login(master, username):
     if not getattr(master.settings, 'NO_AUTH', False):
         raise Exception("NO_AUTHモードが有効でありません")
     
-    # 簡易認証情報を設定
-    master.request.set_token(
-        access_token=username,
-        id_token=username,
-        refresh_token=username
-    )
-    
-    # ユーザー情報を設定
-    master.request.username = username
-    master.request.auth = True
-    master.request.set_cookie = True
-    master.request.decode_token = {
-        'cognito:username': username,
-        'email': f'{username}@example.com',
-        'sub': f'test-{username}-uuid'
-    }
-    
-    return True
+    # 共通の認証設定関数を使用
+    return _set_no_auth_credentials(master, username, set_cookie=True)
 
 
 
@@ -568,10 +537,36 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         master.request.auth = False
         return False
 
-def _validate_token_response(response):
-    """トークンレスポンスの妥当性を検証"""
-    required_keys = ['id_token', 'access_token', 'refresh_token']
-    return all(key in response for key in required_keys)
+def _set_no_auth_credentials(master, username, set_cookie=False):
+    """
+    NO_AUTHモード用の認証情報設定（共通処理）
+    
+    Args:
+        master: Masterインスタンス
+        username: ユーザー名
+        set_cookie: Cookieを設定するかどうか
+        
+    Returns:
+        bool: 常にTrue（設定成功）
+    """
+    # 簡易認証情報を設定（トークンはすべてユーザー名と同じ）
+    master.request.set_token(
+        access_token=username,
+        id_token=username,
+        refresh_token=username
+    )
+    
+    # ユーザー情報を設定
+    master.request.username = username
+    master.request.auth = True
+    master.request.set_cookie = set_cookie
+    master.request.decode_token = {
+        'cognito:username': username,
+        'email': f'{username}@example.com',
+        'sub': f'test-{username}-uuid'
+    }
+    
+    return True
 
 def _generate_auth_cookies(master):
     """認証Cookieを生成"""
