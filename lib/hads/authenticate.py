@@ -576,22 +576,28 @@ def _generate_auth_cookies(master):
     if master.request.id_token is not None:
         cookie['id_token'] = master.request.id_token
         cookie['id_token']['httponly'] = True
-        cookie['id_token']['secure'] = True
         cookie['id_token']['path'] = '/'
+        # ローカル環境でない場合のSecureフラグを追加
+        if not master.local:
+            cookie['id_token']['secure'] = True
         cookies.append(cookie['id_token'].OutputString())
     
     if master.request.access_token is not None:
         cookie['access_token'] = master.request.access_token
         cookie['access_token']['httponly'] = True
-        cookie['access_token']['secure'] = True
         cookie['access_token']['path'] = '/'
+        # ローカル環境でない場合のSecureフラグを追加
+        if not master.local:
+            cookie['access_token']['secure'] = True
         cookies.append(cookie['access_token'].OutputString())
     
     if master.request.refresh_token is not None:
         cookie['refresh_token'] = master.request.refresh_token
         cookie['refresh_token']['httponly'] = True
-        cookie['refresh_token']['secure'] = True
         cookie['refresh_token']['path'] = '/'
+        # ローカル環境でない場合のSecureフラグを追加
+        if not master.local:
+            cookie['refresh_token']['secure'] = True
         cookies.append(cookie['refresh_token'].OutputString())
     
     return cookies
