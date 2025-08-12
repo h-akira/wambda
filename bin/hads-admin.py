@@ -61,20 +61,64 @@ def run_proxy_server(static_url, port=8000, sam_port=3000, static_port=8080):
       static_port: 静的ファイルサーバーのポート番号（デフォルト: 8080）
   """
   class ReverseProxyHandler(http.server.BaseHTTPRequestHandler):
-    def do_GET(self):
+    def _handle_request(self):
+      """すべてのHTTPメソッドを処理する汎用メソッド"""
       parsed_url = urlparse(self.path)
       if parsed_url.path.startswith(static_url):
         target_url = f'http://localhost:{static_port}{self.path}'
       else:
         target_url = f'http://localhost:{sam_port}{self.path}'
+      
       try:
-        with urllib.request.urlopen(target_url) as response:
+        # リクエストボディを読み取り
+        content_length = int(self.headers.get('Content-Length', 0))
+        request_body = self.rfile.read(content_length) if content_length > 0 else None
+        
+        # リクエストを作成
+        req = urllib.request.Request(target_url, data=request_body, method=self.command)
+        
+        # ヘッダーをコピー（Hostヘッダーは除く）
+        for header_name, header_value in self.headers.items():
+          if header_name.lower() not in ['host', 'connection']:
+            req.add_header(header_name, header_value)
+        
+        # リクエストを送信
+        with urllib.request.urlopen(req) as response:
           self.send_response(response.status)
-          self.send_header('Content-type', response.headers.get('Content-type', 'text/html'))
+          
+          # レスポンスヘッダーをコピー
+          for header_name, header_value in response.headers.items():
+            if header_name.lower() not in ['connection', 'transfer-encoding']:
+              self.send_header(header_name, header_value)
+          
           self.end_headers()
           self.wfile.write(response.read())
+          
       except urllib.error.URLError as e:
         self.send_error(500, str(e.reason))
+      except Exception as e:
+        self.send_error(500, f"Proxy error: {str(e)}")
+    
+    def do_GET(self):
+      self._handle_request()
+    
+    def do_POST(self):
+      self._handle_request()
+    
+    def do_PUT(self):
+      self._handle_request()
+    
+    def do_DELETE(self):
+      self._handle_request()
+    
+    def do_PATCH(self):
+      self._handle_request()
+    
+    def do_HEAD(self):
+      self._handle_request()
+    
+    def do_OPTIONS(self):
+      self._handle_request()
         
   httpd = http.server.HTTPServer(('localhost', port), ReverseProxyHandler)
   print(f"プロキシサーバーを起動しました: http://localhost:{port}")
