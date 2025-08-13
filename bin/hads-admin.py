@@ -86,10 +86,18 @@ def run_proxy_server(static_url, port=8000, sam_port=3000, static_port=8080):
         with urllib.request.urlopen(req) as response:
           self.send_response(response.status)
           
-          # レスポンスヘッダーをコピー
+          # レスポンスヘッダーをコピー（Set-Cookieヘッダーを特別処理）
+          set_cookie_headers = []
           for header_name, header_value in response.headers.items():
             if header_name.lower() not in ['connection', 'transfer-encoding']:
-              self.send_header(header_name, header_value)
+              if header_name.lower() == 'set-cookie':
+                set_cookie_headers.append(header_value)
+              else:
+                self.send_header(header_name, header_value)
+          
+          # 複数のSet-Cookieヘッダーを個別に送信
+          for cookie_header in set_cookie_headers:
+            self.send_header('Set-Cookie', cookie_header)
           
           self.end_headers()
           self.wfile.write(response.read())
