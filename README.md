@@ -29,7 +29,7 @@ HADSで構築されるAWSシステムの構成図：
 
 Lambda関数内の処理フローとコンポーネント構成：
 
-![lambda](images/lambda.png)
+![lambda](images/lambda_en.png)
 
 1. **リクエスト受信**: API Gatewayからイベント情報を受信
 2. **初期化処理**: Masterクラスによる設定読み込みと認証処理
