@@ -100,43 +100,62 @@ def run_proxy_server(static_url, port=8000, sam_port=3000, static_port=8080):
         
         print(f"[PROXY] Forwarded headers: {len(copied_headers)} headers")
         
+        # リダイレクト無効化のカスタムErrorHandlerを作成
+        class NoRedirectErrorHandler(urllib.request.HTTPErrorProcessor):
+          def http_response(self, request, response):
+            # 3xxレスポンスでもエラーとして扱わない
+            return response
+          
+          def https_response(self, request, response):
+            return self.http_response(request, response)
+        
+        # カスタムopenerを作成（リダイレクト追跡なし）
+        opener = urllib.request.build_opener(NoRedirectErrorHandler)
+        opener.add_handler(urllib.request.HTTPHandler())
+        opener.add_handler(urllib.request.HTTPSHandler())
+        
         # リクエストを送信
-        with urllib.request.urlopen(req) as response:
-          print(f"[PROXY] Response status: {response.status}")
-          self.send_response(response.status)
-          
-          # レスポンスヘッダーをログ出力
-          print(f"[PROXY] Response headers from SAM Local:")
-          for header_name, header_value in response.headers.items():
-            print(f"[PROXY]   {header_name}: {header_value}")
-          
-          # レスポンスヘッダーをコピー（Set-Cookieヘッダーを特別処理）
-          set_cookie_headers = []
-          forwarded_headers = []
-          for header_name, header_value in response.headers.items():
-            if header_name.lower() not in ['connection', 'transfer-encoding']:
-              if header_name.lower() == 'set-cookie':
-                set_cookie_headers.append(header_value)
-              else:
-                self.send_header(header_name, header_value)
-                forwarded_headers.append(f"{header_name}: {header_value}")
-          
-          print(f"[PROXY] Forwarded {len(forwarded_headers)} response headers")
-          
-          # 複数のSet-Cookieヘッダーを個別に送信
-          if set_cookie_headers:
-            print(f"[PROXY] Found {len(set_cookie_headers)} Set-Cookie headers:")
-            for i, cookie_header in enumerate(set_cookie_headers):
-              print(f"[PROXY]   Cookie {i+1}: {cookie_header}")
-              self.send_header('Set-Cookie', cookie_header)
-          else:
-            print(f"[PROXY] No Set-Cookie headers found")
-          
-          self.end_headers()
-          
-          response_body = response.read()
-          print(f"[PROXY] Response body length: {len(response_body)} bytes")
-          self.wfile.write(response_body)
+        try:
+          response = opener.open(req)
+        except urllib.error.HTTPError as e:
+          # HTTPErrorも通常のレスポンスとして扱う（3xxリダイレクトのため）
+          response = e
+        
+        print(f"[PROXY] Response status: {response.status}")
+        self.send_response(response.status)
+        
+        # レスポンスヘッダーをログ出力
+        print(f"[PROXY] Response headers from SAM Local:")
+        for header_name, header_value in response.headers.items():
+          print(f"[PROXY]   {header_name}: {header_value}")
+        
+        # レスポンスヘッダーをコピー（Set-Cookieヘッダーを特別処理）
+        set_cookie_headers = []
+        forwarded_headers = []
+        for header_name, header_value in response.headers.items():
+          if header_name.lower() not in ['connection', 'transfer-encoding']:
+            if header_name.lower() == 'set-cookie':
+              set_cookie_headers.append(header_value)
+            else:
+              self.send_header(header_name, header_value)
+              forwarded_headers.append(f"{header_name}: {header_value}")
+        
+        print(f"[PROXY] Forwarded {len(forwarded_headers)} response headers")
+        
+        # 複数のSet-Cookieヘッダーを個別に送信
+        if set_cookie_headers:
+          print(f"[PROXY] Found {len(set_cookie_headers)} Set-Cookie headers:")
+          for i, cookie_header in enumerate(set_cookie_headers):
+            print(f"[PROXY]   Cookie {i+1}: {cookie_header}")
+            self.send_header('Set-Cookie', cookie_header)
+        else:
+          print(f"[PROXY] No Set-Cookie headers found")
+        
+        self.end_headers()
+        
+        response_body = response.read()
+        print(f"[PROXY] Response body length: {len(response_body)} bytes")
+        self.wfile.write(response_body)
           
       except urllib.error.URLError as e:
         self.send_error(500, str(e.reason))

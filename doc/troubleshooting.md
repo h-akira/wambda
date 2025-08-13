@@ -680,6 +680,55 @@ def verify_cognito_token(token):
         return None
 ```
 
+### プロキシサーバー経由でログインできない
+
+**症状**: プロキシサーバー（`hads-admin.py proxy`）を使用すると認証が失敗するが、SAM Local直接接続（ポート3000）では正常にログインできる
+
+**原因**: プロキシサーバーのリダイレクト処理とCookieヘッダー処理の問題
+
+**診断手順**:
+
+1. **ログでリダイレクト処理を確認**:
+```bash
+# プロキシサーバー起動（詳細ログ付き）
+hads-admin.py proxy
+
+# ログイン試行後、以下を確認：
+# - POSTリクエストのResponse status（302である必要がある）
+# - Set-Cookieヘッダーの有無
+```
+
+2. **期待される正常ログ**:
+```
+[PROXY] POST /accounts/login -> http://localhost:3000/accounts/login
+[PROXY] Response status: 302
+[PROXY] Found 1 Set-Cookie headers:
+[PROXY]   Cookie 1: no_auth_user=username; Path=/; Expires=...
+```
+
+3. **問題のあるログ例**:
+```
+[PROXY] POST /accounts/login -> http://localhost:3000/accounts/login
+[PROXY] Response status: 200
+[PROXY] No Set-Cookie headers found
+```
+
+**解決策**:
+
+この問題は以下の要因で発生し、HADSフレームワークで修正済みです：
+
+1. **リダイレクト自動追跡の無効化**:
+   - `urllib.request.urlopen()`はデフォルトで302リダイレクトを自動追跡
+   - カスタム`NoRedirectErrorHandler`により302レスポンスをそのまま転送
+
+2. **複数Set-Cookieヘッダーの適切な処理**:
+   - 認証時に複数のCookieが設定される（id_token、access_token、refresh_token）
+   - 各Cookieヘッダーを個別に処理
+
+**回避策**（古いバージョンの場合）:
+- SAM Local直接接続を使用: `http://localhost:3000`
+- または最新のHADSバージョンにアップデート
+
 ---
 
 ## ログとデバッグ
