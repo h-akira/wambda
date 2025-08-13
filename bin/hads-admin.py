@@ -61,6 +61,10 @@ def run_proxy_server(static_url, port=8000, sam_port=3000, static_port=8080):
       static_port: 静的ファイルサーバーのポート番号（デフォルト: 8080）
   """
   class ReverseProxyHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+      """HTTPサーバーのログメッセージをカスタマイズ"""
+      print(f"[PROXY] {format % args}")
+    
     def _handle_request(self):
       """すべてのHTTPメソッドを処理する汎用メソッド"""
       parsed_url = urlparse(self.path)
@@ -69,38 +73,70 @@ def run_proxy_server(static_url, port=8000, sam_port=3000, static_port=8080):
       else:
         target_url = f'http://localhost:{sam_port}{self.path}'
       
+      print(f"[PROXY] {self.command} {self.path} -> {target_url}")
+      
+      # リクエストヘッダーをログ出力
+      print(f"[PROXY] Request headers:")
+      for header_name, header_value in self.headers.items():
+        print(f"[PROXY]   {header_name}: {header_value}")
+      
       try:
         # リクエストボディを読み取り
         content_length = int(self.headers.get('Content-Length', 0))
         request_body = self.rfile.read(content_length) if content_length > 0 else None
         
+        if request_body:
+          print(f"[PROXY] Request body: {request_body.decode('utf-8', errors='ignore')[:200]}...")
+        
         # リクエストを作成
         req = urllib.request.Request(target_url, data=request_body, method=self.command)
         
         # ヘッダーをコピー（Hostヘッダーは除く）
+        copied_headers = []
         for header_name, header_value in self.headers.items():
           if header_name.lower() not in ['host', 'connection']:
             req.add_header(header_name, header_value)
+            copied_headers.append(f"{header_name}: {header_value}")
+        
+        print(f"[PROXY] Forwarded headers: {len(copied_headers)} headers")
         
         # リクエストを送信
         with urllib.request.urlopen(req) as response:
+          print(f"[PROXY] Response status: {response.status}")
           self.send_response(response.status)
+          
+          # レスポンスヘッダーをログ出力
+          print(f"[PROXY] Response headers from SAM Local:")
+          for header_name, header_value in response.headers.items():
+            print(f"[PROXY]   {header_name}: {header_value}")
           
           # レスポンスヘッダーをコピー（Set-Cookieヘッダーを特別処理）
           set_cookie_headers = []
+          forwarded_headers = []
           for header_name, header_value in response.headers.items():
             if header_name.lower() not in ['connection', 'transfer-encoding']:
               if header_name.lower() == 'set-cookie':
                 set_cookie_headers.append(header_value)
               else:
                 self.send_header(header_name, header_value)
+                forwarded_headers.append(f"{header_name}: {header_value}")
+          
+          print(f"[PROXY] Forwarded {len(forwarded_headers)} response headers")
           
           # 複数のSet-Cookieヘッダーを個別に送信
-          for cookie_header in set_cookie_headers:
-            self.send_header('Set-Cookie', cookie_header)
+          if set_cookie_headers:
+            print(f"[PROXY] Found {len(set_cookie_headers)} Set-Cookie headers:")
+            for i, cookie_header in enumerate(set_cookie_headers):
+              print(f"[PROXY]   Cookie {i+1}: {cookie_header}")
+              self.send_header('Set-Cookie', cookie_header)
+          else:
+            print(f"[PROXY] No Set-Cookie headers found")
           
           self.end_headers()
-          self.wfile.write(response.read())
+          
+          response_body = response.read()
+          print(f"[PROXY] Response body length: {len(response_body)} bytes")
+          self.wfile.write(response_body)
           
       except urllib.error.URLError as e:
         self.send_error(500, str(e.reason))
