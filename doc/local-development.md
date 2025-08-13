@@ -798,6 +798,8 @@ for cookie_header in set_cookie_headers:
 
 ### デバッグとログ
 
+#### プロキシサーバーのデバッグログ
+
 開発時にプロキシサーバーの詳細ログを確認できます：
 
 ```bash
@@ -809,6 +811,50 @@ hads-admin.py proxy
 [PROXY] Response status: 302
 [PROXY] Found 1 Set-Cookie headers:
 [PROXY]   Cookie 1: no_auth_user=username; Path=/; Expires=...
+```
+
+#### Lambda関数の直接デバッグ
+
+Lambda関数を直接実行してテストできます（SAM Local不要）：
+
+```bash
+# 基本的な使用方法
+cd Lambda
+PYTHONPATH=../hads/lib python3 lambda_function.py -p /
+
+# POSTリクエストのテスト
+PYTHONPATH=../hads/lib python3 lambda_function.py \
+  -p /accounts/login \
+  -m POST \
+  -b "username=test&password=test" \
+  -H "Content-Type: application/x-www-form-urlencoded"
+
+# JSONリクエストのテスト
+PYTHONPATH=../hads/lib python3 lambda_function.py \
+  -p /api/data \
+  -m POST \
+  -b '{"key":"value"}' \
+  --json
+
+# クエリパラメータ付きリクエスト
+PYTHONPATH=../hads/lib python3 lambda_function.py \
+  -p /api/search \
+  -q "query=python&limit=10"
+```
+
+**デバッグ用オプション**:
+- `-p, --path`: テストするパス（デフォルト: `/`）
+- `-m, --method`: HTTPメソッド（デフォルト: `GET`）
+- `-b, --body`: リクエストボディ
+- `-H, --header`: ヘッダー追加（例: `'Content-Type: application/json'`）
+- `-q, --query`: クエリパラメータ（例: `'key1=value1&key2=value2'`）
+- `--json`: ボディをJSON形式として解析
+- `--quiet`: 最小限の出力（ステータスコードのみ）
+
+**便利なラッパースクリプト**:
+```bash
+# プロジェクトルートにdebug.shを配置
+./debug.sh -p /accounts/login -m POST -b "username=test&password=test"
 ```
 
 ## 次のステップ

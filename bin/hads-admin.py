@@ -344,9 +344,27 @@ Test request to Lambda function by directly importing and executing lambda_handl
     print(f"Testing {options.method} request to {options.path}")
   
   try:
-    # Add Lambda directory to Python path
+    # Preserve original Python path (including installed packages)
     original_path = sys.path.copy()
+    
+    # Add Lambda directory to Python path (highest priority)
     sys.path.insert(0, lambda_dir)
+    
+    # Add hads library path (relative to this script) - second priority
+    hads_lib_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
+    if os.path.exists(hads_lib_path):
+      sys.path.insert(1, hads_lib_path)  # Insert after Lambda directory
+      print(f"Added hads library path: {hads_lib_path}")
+    else:
+      print(f"Warning: hads library path not found: {hads_lib_path}")
+      # Try to find hads in current working directory structure
+      cwd_hads_path = os.path.join(os.getcwd(), 'hads', 'lib')
+      if os.path.exists(cwd_hads_path):
+        sys.path.insert(1, cwd_hads_path)
+        print(f"Added alternative hads library path: {cwd_hads_path}")
+    
+    # Debug: Print Python path for troubleshooting
+    print(f"Python path: {sys.path[:5]}...")  # Show first 5 entries
     
     # Import lambda function module
     print(f"Importing lambda_handler from {lambda_file}")
