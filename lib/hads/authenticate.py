@@ -667,8 +667,8 @@ def _no_auth_sign_out(master):
     master.request.id_token = None
     master.request.refresh_token = None
     
-    # Cookie削除フラグを設定
-    master.request.clean_cookie = True
+    # # Cookie削除フラグを設定
+    # master.request.clean_cookie = True
 
 
 
