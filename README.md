@@ -1,41 +1,41 @@
 # HADS
 
-## 概要
+## Overview
 
-HADS（h-akira AWS Develop with Serverless）は、AWSでサーバーレスWebアプリケーションを開発するためのPythonフレームワークです。このフレームワークは[HAD](https://github.com/h-akira/had)の後継として開発されましたが、設計思想が大きく異なるため、用途によってはHADの継続使用を推奨する場合もあります。
+HADS (h-akira AWS Develop with Serverless) is a Python framework for developing serverless web applications on AWS. While developed as a successor to [HAD](https://github.com/h-akira/had), the architectural philosophy is significantly different, and in some cases, continuing with HAD may be recommended depending on the use case.
 
-## 設計思想
+## Design Philosophy
 
-- **SAMの活用**: AWS Serverless Application Modelを使用したインフラストラクチャの管理
-- **単一Lambda**: すべてのリクエストを1つのLambda関数で処理
-- **S3静的ファイル配信**: 静的ファイルはS3から効率的に配信
-- **ローカル開発**: 本番環境と同等の開発環境をローカルで構築
-- **Django風の設計**: urls.py、views.py、テンプレートによるMVC構造
+- **Leverage SAM**: Use AWS Serverless Application Model for infrastructure management
+- **Single Lambda**: Process all requests with one Lambda function (Lambdalith approach)
+- **S3 Static File Distribution**: Efficiently serve static files from S3
+- **Local Development**: Build local development environments equivalent to production
+- **Django-like Design**: MVC structure with urls.py, views.py, and templates
 
-## アーキテクチャ
+## Architecture
 
-### システム構成
+### System Configuration
 
-HADSで構築されるAWSシステムの構成図：
+AWS system configuration diagram built with HADS:
 
 ![structure](images/structure.png)
 
-- **API Gateway**: HTTPリクエストの受付と Lambda への転送
-- **Lambda関数**: 単一関数ですべてのルーティングとビジネスロジックを処理
-- **S3**: 静的ファイル（CSS、JS、画像）の配信
-- **その他のAWSサービス**: 必要に応じてSAMテンプレートで追加定義
+- **API Gateway**: Accept HTTP requests and forward to Lambda
+- **Lambda Function**: Single function handles all routing and business logic
+- **S3**: Serve static files (CSS, JS, images)
+- **Other AWS Services**: Additional definitions via SAM templates as needed
 
-### Lambda内部構造
+### Lambda Internal Structure
 
-Lambda関数内の処理フローとコンポーネント構成：
+Processing flow and component configuration within Lambda function:
 
 ![lambda](images/lambda_en.png)
 
-1. **リクエスト受信**: API Gatewayからイベント情報を受信
-2. **初期化処理**: Masterクラスによる設定読み込みと認証処理
-3. **ルーティング**: urls.pyの設定に基づいてビュー関数を決定
-4. **ビュー実行**: views.pyの関数によりビジネスロジックを実行
-5. **レスポンス生成**: テンプレートエンジンによるHTML生成とHTTPレスポンス返却  
+1. **Request Reception**: Receive event information from API Gateway
+2. **Initialization**: Load settings and process authentication via Master class
+3. **Routing**: Determine view functions based on urls.py configuration
+4. **View Execution**: Execute business logic through views.py functions
+5. **Response Generation**: Generate HTML via template engine and return HTTP response
 
 ## 📚 Documentation
 
@@ -58,128 +58,128 @@ Comprehensive documentation is available in the [doc](./doc/README.md) directory
 - [Local Development Environment](./doc/local-development.md)
 - [Deployment Guide](./doc/deployment.md)
 
-## 🚀 クイックスタート
+## 🚀 Quick Start
 
-HADSによる基本的な開発ワークフロー：
+Basic development workflow with HADS:
 
-### 1. プロジェクトの初期化
+### 1. Project Initialization
 ```bash
-# 対話式でテンプレートを選択
+# Interactive template selection
 hads-admin.py init -n my-project
 
-# テンプレートを指定して作成
+# Create with specified template
 hads-admin.py init -n my-project -t SSR001
 ```
 
-利用可能なテンプレート：
-- **SSR001**: サーバーサイドレンダリングテンプレート（認証機能付き）
-- **API001**: APIテンプレート（Vue、React、Angular等のフロントエンド用）
+Available templates:
+- **SSR001**: Server-side rendering template (with authentication)
+- **API001**: API template (for Vue, React, Angular, etc. frontends)
 
-### 2. ローカル開発環境の起動
+### 2. Start Local Development Environment
 ```bash
 cd my-project
 
-# プロキシサーバーを起動（推奨: SAM Local + 静的ファイルサーバーを統合）
+# Start proxy server (recommended: integrates SAM Local + static file server)
 hads-admin.py proxy
 
-# 個別にサーバーを起動する場合
-hads-admin.py static          # 静的ファイルサーバー（ポート8080）
-sam local start-api           # SAM Local APIサーバー（ポート3000）
+# Start servers individually
+hads-admin.py static          # Static file server (port 8080)
+sam local start-api           # SAM Local API server (port 3000)
 ```
 
-### 3. テスト実行
+### 3. Testing
 ```bash
-# GET リクエストのテスト
+# Test GET request
 hads-admin.py get
 
-# 特定のパスとメソッドのテスト
+# Test specific path and method
 hads-admin.py get -p /api/users -m POST
 
-# カスタムイベントファイルを使用したテスト
+# Use custom event file
 hads-admin.py get -e custom-event.json
 ```
 
-### 4. AWSへのデプロイ
+### 4. Deploy to AWS
 ```bash
-# SAM CLIを使用したデプロイ
+# Deploy using SAM CLI
 sam build
 sam deploy
 
-# 静的ファイルのS3同期（AWS CLI）
+# Sync static files to S3 (AWS CLI)
 aws s3 sync static/ s3://your-bucket/static/
 ```
 
-詳細な使用方法については[ドキュメント](./doc/README.md)をご参照ください。
+For detailed usage, please refer to the [documentation](./doc/README.md).
 
-## 📁 サンプルプロジェクト
+## 📁 Sample Projects
 
-HADSを使用したサンプルプロジェクト：
+Sample projects using HADS:
 
-### 最新版（推奨）
-- **[HadsSampleProject2](../HadsSampleProject2/)** - 認証機能、フォーム処理、モック機能を含む最新のサンプル
-  - AWS Cognito認証統合
-  - WTFormsによるフォームバリデーション
-  - motoによるAWSサービスモック
-  - アカウント管理（サインアップ、ログイン、メール確認）
+### Latest Version (Recommended)
+- **[HadsSampleProject2](../HadsSampleProject2/)** - Latest sample with authentication, form handling, and mock functionality
+  - AWS Cognito authentication integration
+  - Form validation with WTForms
+  - AWS service mocking with moto
+  - Account management (signup, login, email verification)
 
-### その他のプロジェクト例
-- **[HadsSampleProject](../HadsSampleProject/)** - 基本的なサンプル（旧版）
-- **[ShogiProject](https://github.com/h-akira/ShogiProject)** - 将棋棋譜管理システム（実用例）
+### Other Project Examples
+- **[HadsSampleProject](../HadsSampleProject/)** - Basic sample (legacy version)
+- **[ShogiProject](https://github.com/h-akira/ShogiProject)** - Shogi game record management system (practical example)
 
-## 🛠️ CLI ツール詳細
+## 🛠️ CLI Tool Details
 
-### hads-admin.py コマンド
+### hads-admin.py Commands
 
-HADSの管理ツールは、シンプルで直感的なコマンドラインインターフェースを提供します。設定ファイルに依存せず、すべてコマンドラインオプションで制御できます。
+HADS management tools provide a simple and intuitive command-line interface. Everything is controlled by command-line options without depending on configuration files.
 
-#### init - プロジェクト初期化
+#### init - Project Initialization
 ```bash
-hads-admin.py init -n <プロジェクト名> [-t <テンプレート>]
+hads-admin.py init -n <project-name> [-t <template>]
 
-# オプション:
-# -n, --name      : プロジェクト名（必須）
-# -t, --template  : テンプレート（SSR001, API001）
+# Options:
+# -n, --name      : Project name (required)
+# -t, --template  : Template (SSR001, API001)
 ```
 
-#### proxy - プロキシサーバー起動
+#### proxy - Start Proxy Server
 ```bash
-hads-admin.py proxy [オプション]
+hads-admin.py proxy [options]
 
-# オプション:
-# -p, --proxy-port  : プロキシサーバーポート（デフォルト: 8000）
-# -s, --sam-port    : SAM Localポート（デフォルト: 3000）
-# --static-port     : 静的ファイルサーバーポート（デフォルト: 8080）
-# --static-url      : 静的ファイルURL プレフィックス（デフォルト: /static）
-# -d, --static-dir  : 静的ファイルディレクトリ（デフォルト: static）
+# Options:
+# -p, --proxy-port  : Proxy server port (default: 8000)
+# -s, --sam-port    : SAM Local port (default: 3000)
+# --static-port     : Static file server port (default: 8080)
+# --static-url      : Static file URL prefix (default: /static)
+# -d, --static-dir  : Static file directory (default: static)
 ```
 
-#### static - 静的ファイルサーバー起動
+#### static - Start Static File Server
 ```bash
-hads-admin.py static [オプション]
+hads-admin.py static [options]
 
-# オプション:
-# -p, --port        : サーバーポート（デフォルト: 8080）
-# --static-url      : URL プレフィックス（デフォルト: /static）
-# -d, --static-dir  : ファイルディレクトリ（デフォルト: static）
+# Options:
+# -p, --port        : Server port (default: 8080)
+# --static-url      : URL prefix (default: /static)
+# -d, --static-dir  : File directory (default: static)
 ```
 
-#### get - Lambda関数テスト
+#### get - Lambda Function Testing
 ```bash
-hads-admin.py get [オプション]
+hads-admin.py get [options]
 
-# オプション:
-# -p, --path         : テストするパス（デフォルト: /）
-# -m, --method       : HTTPメソッド（デフォルト: GET）
-# -e, --event-file   : カスタムイベントJSONファイル
-# -t, --template     : SAMテンプレートファイル（デフォルト: template.yaml）
-# -f, --function-name: Lambda関数名（デフォルト: MainFunction）
+# Options:
+# -p, --path         : Path to test (default: /)
+# -m, --method       : HTTP method (default: GET)
+# -e, --event-file   : Custom event JSON file
+# -t, --template     : SAM template file (default: template.yaml)
+# -f, --function-name: Lambda function name (default: MainFunction)
 ```
 
-## 🔧 開発スケジュール
+## 🔧 Development Roadmap
 
-今後追加予定の機能：
-- **テンプレート生成機能**: SAMテンプレートやその他設定ファイルの自動生成
-- **エラーハンドリング強化**: より詳細なエラー情報の提供
-- **ドキュメント改善**: より詳細な使用例とベストプラクティス
-- **認証プロバイダー追加**: Cognito以外の認証システムへの対応
-- **デプロイ支援機能**: 自動ビルド・デプロイ機能の統合
+Planned features to be added:
+- **Template Generation**: Automatic generation of SAM templates and other configuration files
+- **Enhanced Error Handling**: Provide more detailed error information
+- **Documentation Improvements**: More detailed usage examples and best practices
+- **Additional Authentication Providers**: Support for authentication systems other than Cognito
+- **Deployment Support Features**: Integration of automated build and deployment functionality
