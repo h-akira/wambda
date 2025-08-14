@@ -5,6 +5,40 @@ import hashlib
 import base64
 from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
+import boto3
+
+# Lambdaコンテナレベルのキャッシュ
+_cognito_settings_cache = None
+
+def get_cognito_settings(master):
+    """
+    Cognito設定をSSMから取得（キャッシュ付き）
+    
+    Args:
+        master: Masterインスタンス
+        
+    Returns:
+        dict: Cognito設定値の辞書
+    """
+    global _cognito_settings_cache
+    
+    if _cognito_settings_cache is not None:
+        return _cognito_settings_cache
+    
+    # SSMから取得（モック環境ではmock/ssm.pyが設定したデータを取得）
+    ssm = boto3.client('ssm', region_name=master.settings.REGION)
+    ssm_params = master.settings.COGNITO_SSM_PARAMS
+    
+    _cognito_settings_cache = {}
+    for key, param_name in ssm_params.items():
+        try:
+            value = ssm.get_parameter(Name=param_name, WithDecryption=True)["Parameter"]["Value"]
+            _cognito_settings_cache[key] = value
+        except Exception as e:
+            logging.error(f"Failed to get SSM parameter {param_name}: {e}")
+            raise
+    
+    return _cognito_settings_cache
 
 
 def login(master, username, password):
@@ -35,13 +69,16 @@ def login(master, username, password):
             'PASSWORD': password
         }
         
+        # Cognito設定を取得
+        cognito_settings = get_cognito_settings(master)
+        
         # CLIENT_SECRETが設定されている場合はSECRET_HASHを追加
-        if hasattr(master.settings, 'CLIENT_SECRET') and master.settings.CLIENT_SECRET:
+        if cognito_settings.get('CLIENT_SECRET'):
             auth_params['SECRET_HASH'] = _calculate_secret_hash(master, username)
         
         response = client.admin_initiate_auth(
-            UserPoolId=master.settings.USER_POOL_ID,
-            ClientId=master.settings.CLIENT_ID,
+            UserPoolId=cognito_settings['USER_POOL_ID'],
+            ClientId=cognito_settings['CLIENT_ID'],
             AuthFlow='ADMIN_USER_PASSWORD_AUTH',
             AuthParameters=auth_params
         )
@@ -103,12 +140,15 @@ def signup(master, username, email, password):
             'UserAttributes': user_attributes
         }
         
+        # Cognito設定を取得
+        cognito_settings = get_cognito_settings(master)
+        
         # CLIENT_SECRETが設定されている場合はSECRET_HASHを追加
-        if hasattr(master.settings, 'CLIENT_SECRET') and master.settings.CLIENT_SECRET:
+        if cognito_settings.get('CLIENT_SECRET'):
             signup_params['SecretHash'] = _calculate_secret_hash(master, username)
         
         response = client.sign_up(
-            ClientId=master.settings.CLIENT_ID,
+            ClientId=cognito_settings['CLIENT_ID'],
             **signup_params
         )
         
@@ -148,12 +188,15 @@ def verify(master, username, code):
             'ConfirmationCode': code
         }
         
+        # Cognito設定を取得
+        cognito_settings = get_cognito_settings(master)
+        
         # CLIENT_SECRETが設定されている場合はSECRET_HASHを追加
-        if hasattr(master.settings, 'CLIENT_SECRET') and master.settings.CLIENT_SECRET:
+        if cognito_settings.get('CLIENT_SECRET'):
             confirm_params['SecretHash'] = _calculate_secret_hash(master, username)
         
         response = client.confirm_sign_up(
-            ClientId=master.settings.CLIENT_ID,
+            ClientId=cognito_settings['CLIENT_ID'],
             **confirm_params
         )
         
@@ -459,16 +502,17 @@ def _decode_id_token(master, id_token, verify=True):
     """IDトークンをデコード"""
     if verify:
         from jwt import decode, PyJWKClient
+        cognito_settings = get_cognito_settings(master)
         jwk_client = PyJWKClient(
-            f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{master.settings.USER_POOL_ID}/.well-known/jwks.json'
+            f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{cognito_settings["USER_POOL_ID"]}/.well-known/jwks.json'
         )
         signing_key = jwk_client.get_signing_key_from_jwt(id_token)
         return decode(
             id_token,
             signing_key.key,
             algorithms=['RS256'],
-            audience=master.settings.CLIENT_ID,
-            issuer=f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{master.settings.USER_POOL_ID}'
+            audience=cognito_settings['CLIENT_ID'],
+            issuer=f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{cognito_settings["USER_POOL_ID"]}'
         )
     else:
         from jwt import decode
@@ -479,9 +523,10 @@ def _calculate_secret_hash(master, username):
     if username is None:
         raise ValueError("ユーザー名がNoneです")
     
-    message = username + master.settings.CLIENT_ID
+    cognito_settings = get_cognito_settings(master)
+    message = username + cognito_settings['CLIENT_ID']
     dig = hmac.new(
-        master.settings.CLIENT_SECRET.encode('utf-8'),
+        cognito_settings['CLIENT_SECRET'].encode('utf-8'),
         msg=message.encode('utf-8'),
         digestmod=hashlib.sha256
     ).digest()
@@ -533,9 +578,12 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         # シークレットハッシュを計算
         secret_hash = _calculate_secret_hash(master, username)
         
+        # Cognito設定を取得
+        cognito_settings = get_cognito_settings(master)
+        
         # トークンをリフレッシュ
         response = client.initiate_auth(
-            ClientId=master.settings.CLIENT_ID,
+            ClientId=cognito_settings['CLIENT_ID'],
             AuthFlow='REFRESH_TOKEN_AUTH',
             AuthParameters={
                 'REFRESH_TOKEN': refresh_token,
