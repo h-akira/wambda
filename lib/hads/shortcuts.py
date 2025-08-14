@@ -37,8 +37,8 @@ def reverse(master, url_name, **kwargs):
     # ルーターからパスを生成
     path = master.router.name2path(url_name, kwargs)
     
-    # 環境に応じたマッピングパスを取得
-    mapping_path = _get_mapping_path(master)
+    # マッピングパスを正規化
+    mapping_path = _normalize_path(master.settings.MAPPING_PATH)
     
     # 完全なURLパスを構築
     return _build_full_path(mapping_path, path)
@@ -57,8 +57,8 @@ def static(master, file_path):
     # 静的ファイルのベースURLを取得
     static_url = _normalize_path(master.settings.STATIC_URL)
     
-    # 環境に応じたマッピングパスを取得
-    mapping_path = _get_mapping_path(master)
+    # マッピングパスを正規化
+    mapping_path = _normalize_path(master.settings.MAPPING_PATH)
     
     # 完全なURLパスを構築
     return _build_full_path(mapping_path, static_url, file_path)
@@ -182,14 +182,6 @@ def error_render(master, error_message=None):
 
 # プライベート関数（内部使用）
 
-def _get_mapping_path(master):
-    """環境に応じたマッピングパスを取得"""
-    if master.local:
-        mapping_path = master.settings.MAPPING_PATH_LOCAL
-    else:
-        mapping_path = master.settings.MAPPING_PATH
-    
-    return _normalize_path(mapping_path)
 
 def _normalize_path(path):
     """パスの先頭スラッシュを除去して正規化"""
