@@ -62,7 +62,7 @@ def login(master, username, password):
     """
     # メンテナンス時のログイン拒否チェック
     if getattr(master.settings, 'DENY_LOGIN', False):
-        raise MaintenanceOptionError("現在、メンテナンスのためログインできません。")
+        raise MaintenanceOptionError()
     
     # NO_AUTHモードの場合、簡易ログイン
     if getattr(master.settings, 'NO_AUTH', False):
@@ -131,7 +131,7 @@ def signup(master, username, email, password):
     """
     # メンテナンス時のサインアップ拒否チェック
     if getattr(master.settings, 'DENY_SIGNUP', False):
-        raise MaintenanceOptionError("現在、メンテナンスのため新規登録できません。")
+        raise MaintenanceOptionError()
     
     # NO_AUTHモードの場合、簡易サインアップ（実際にはログインと同じ）
     if getattr(master.settings, 'NO_AUTH', False):
