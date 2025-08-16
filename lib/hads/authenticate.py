@@ -373,6 +373,18 @@ def get_verify_url(master, username=None):
         url += f"{separator}username={username}"
     return url
 
+def get_logout_url(master):
+    """
+    ログアウトURLを生成
+    
+    Args:
+        master: Masterインスタンス
+        
+    Returns:
+        str: ログアウトURL
+    """
+    return _generate_url_from_setting(master, 'LOGOUT_URL')
+
 # プライベート関数（内部使用）
 
 def _set_no_auth_mode(master):

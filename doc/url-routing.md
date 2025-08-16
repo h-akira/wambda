@@ -149,6 +149,126 @@ def my_view(master):
     return render(master, "template.html", context)
 ```
 
+## 🔍 クエリパラメータの処理
+
+### クエリパラメータの取得
+
+ビュー関数内でクエリパラメータにアクセスする方法：
+
+```python
+def search_view(master):
+    # クエリパラメータを取得
+    query_params = master.event.get('queryStringParameters') or {}
+    
+    # 個別のパラメータを取得
+    search_query = query_params.get('q', '')
+    page = query_params.get('page', '1')
+    category = query_params.get('category', 'all')
+    
+    # 型変換とデフォルト値の処理
+    try:
+        page = int(page)
+    except ValueError:
+        page = 1
+    
+    context = {
+        'search_query': search_query,
+        'page': page,
+        'category': category
+    }
+    return render(master, 'search.html', context)
+```
+
+### redirect関数でクエリパラメータを設定
+
+改良された`redirect`関数を使用してクエリパラメータ付きのリダイレクトを行う：
+
+```python
+from hads.shortcuts import redirect
+
+def signup_view(master):
+    if master.request.method == 'POST':
+        # サインアップ処理...
+        if signup_success:
+            # クエリパラメータ付きでリダイレクト
+            return redirect(master, 'accounts:verify', query_params={
+                'username': username,
+                'message': 'signup_success'
+            })
+    
+    return render(master, 'accounts/signup.html', {'form': form})
+
+def verify_view(master):
+    # クエリパラメータからメッセージとユーザー名を取得
+    query_params = master.event.get('queryStringParameters') or {}
+    username = query_params.get('username', '')
+    message_type = query_params.get('message', '')
+    
+    if message_type == 'signup_success':
+        message = 'サインアップが完了しました。確認コードをメールで送信しました。'
+    else:
+        message = None
+    
+    return render(master, 'accounts/verify.html', {
+        'username': username,
+        'message': message
+    })
+```
+
+### redirect関数の使用例
+
+```python
+# 基本的なリダイレクト
+redirect(master, 'home')
+
+# URLパラメータ付きリダイレクト
+redirect(master, 'user:detail', user_id=123)
+
+# クエリパラメータ付きリダイレクト
+redirect(master, 'search', query_params={'q': 'python', 'page': '2'})
+
+# URLパラメータとクエリパラメータの両方
+redirect(master, 'user:posts', 
+         user_id=123, 
+         query_params={'filter': 'published', 'sort': 'date'})
+# 結果: /user/123/posts?filter=published&sort=date
+```
+
+### 実践的な例
+
+```python
+def blog_list(master):
+    """ブログ一覧ページ（ページネーションとフィルタリング付き）"""
+    query_params = master.event.get('queryStringParameters') or {}
+    
+    # クエリパラメータの取得と検証
+    page = max(1, int(query_params.get('page', '1')))
+    category = query_params.get('category', 'all')
+    sort_by = query_params.get('sort', 'date')
+    
+    # データ取得ロジック...
+    posts = get_posts(page=page, category=category, sort_by=sort_by)
+    
+    # 次のページURLを生成
+    if has_next_page:
+        next_url = reverse(master, 'blog:list') + f'?page={page + 1}'
+        if category != 'all':
+            next_url += f'&category={category}'
+        if sort_by != 'date':
+            next_url += f'&sort={sort_by}'
+    else:
+        next_url = None
+    
+    context = {
+        'posts': posts,
+        'page': page,
+        'category': category,
+        'sort_by': sort_by,
+        'next_url': next_url
+    }
+    return render(master, 'blog/list.html', context)
+```
+
 ### テンプレート内での使用
 
 ```html

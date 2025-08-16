@@ -217,9 +217,11 @@ def _register_template_globals(jinja_env):
     jinja_env.globals['reverse'] = reverse
     
     # 認証関連の関数はauthenticate.pyから直接インポート
-    from hads.authenticate import get_login_url, get_signup_url
+    from hads.authenticate import get_login_url, get_signup_url, get_verify_url, get_logout_url
     jinja_env.globals['get_login_url'] = get_login_url
     jinja_env.globals['get_signup_url'] = get_signup_url
+    jinja_env.globals['get_verify_url'] = get_verify_url
+    jinja_env.globals['get_logout_url'] = get_logout_url
 
 def _generate_debug_error_html(error_message, event, context):
     """デバッグモード用の詳細エラーHTML"""

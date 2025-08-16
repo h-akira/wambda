@@ -258,7 +258,7 @@ def api_view(master):
     return json_response(master, data)
 ```
 
-### redirect(master, app_name, **kwargs)
+### redirect(master, url_name, query_params=None, **kwargs)
 
 指定したURLにリダイレクトします。
 
@@ -267,8 +267,13 @@ def api_view(master):
 | パラメータ | 型 | 説明 |
 |-----------|----|----- |
 | `master` | Master | Masterオブジェクト |
-| `app_name` | str | リダイレクト先のURL名 |
+| `url_name` | str | リダイレクト先のURL名 |
+| `query_params` | dict | クエリパラメータの辞書（オプション） |
 | `**kwargs` | dict | URLパラメータ |
+
+#### 戻り値
+
+HTTPリダイレクトレスポンス（statusCode: 302）
 
 #### 使用例
 
@@ -276,12 +281,26 @@ def api_view(master):
 from hads.shortcuts import redirect
 
 def login_view(master):
-    # ログイン処理後、プロフィールページにリダイレクト
+    # 基本的なリダイレクト
     return redirect(master, "profile")
 
 def user_redirect(master):
-    # パラメータ付きリダイレクト
+    # URLパラメータ付きリダイレクト
     return redirect(master, "user_detail", user_id="123")
+
+def signup_success(master):
+    # クエリパラメータ付きリダイレクト
+    return redirect(master, "accounts:verify", query_params={
+        'username': 'john_doe',
+        'message': 'signup_success'
+    })
+
+def complex_redirect(master):
+    # URLパラメータとクエリパラメータの両方
+    return redirect(master, "user:posts", 
+                   user_id="123",
+                   query_params={'filter': 'published', 'sort': 'date'})
+    # 生成されるURL: /user/123/posts?filter=published&sort=date
 ```
 
 ### reverse(master, app_name, **kwargs)
