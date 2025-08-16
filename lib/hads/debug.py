@@ -129,15 +129,20 @@ def parse_debug_args():
                      help="verbose output")
   parser.add_argument("--quiet", action="store_true",
                      help="quiet mode (minimal output)")
+  parser.add_argument("-e", "--env", action="append", 
+                     help="set environment variable (format: 'KEY=VALUE')")
   
   return parser.parse_args()
 
 
-def prepare_debug_environment():
+def prepare_debug_environment(env_vars=None):
   """
   デバッグ実行環境を準備
   - 必要なパスの追加
   - 環境変数の設定など
+  
+  Args:
+    env_vars: 環境変数のリスト（'KEY=VALUE'形式）
   """
   # 現在のディレクトリをPythonパスに追加
   current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -151,6 +156,17 @@ def prepare_debug_environment():
   
   # AWS_SAM_LOCALフラグを設定（ローカル環境であることを示す）
   os.environ['AWS_SAM_LOCAL'] = 'true'
+  
+  # 追加の環境変数を設定
+  if env_vars:
+    for env_var in env_vars:
+      if '=' in env_var:
+        key, value = env_var.split('=', 1)
+        os.environ[key.strip()] = value.strip()
+        print(f"Environment variable set: {key.strip()}={value.strip()}")
+      else:
+        print(f"Warning: Invalid environment variable format: {env_var}")
+        print("Expected format: KEY=VALUE")
 
 
 def main_debug_handler(lambda_handler_func):
@@ -161,11 +177,11 @@ def main_debug_handler(lambda_handler_func):
   Args:
     lambda_handler_func: lambda_handler関数
   """
-  # 環境準備
-  prepare_debug_environment()
-  
   # 引数解析
   args = parse_debug_args()
+  
+  # 環境準備（環境変数を含む）
+  prepare_debug_environment(args.env)
   
   # クエリパラメータの解析
   query_params = None

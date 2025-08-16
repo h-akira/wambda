@@ -16,6 +16,8 @@ import socketserver
 import urllib.request
 from urllib.parse import urlparse
 import tempfile
+import boto3
+from datetime import datetime, timedelta
 
 
 def run_static_server(static_url, static_dir, port=8080):
@@ -195,7 +197,7 @@ def print_usage():
   print("  init: create hads project")
   print("  proxy: run proxy server")
   print("  static: run static server")
-  print("  get: test request by directly executing lambda_handler")
+  print("  log: retrieve recent Lambda function logs from CloudWatch")
 
 
 def init():
@@ -292,115 +294,98 @@ Run static file server for local development.
     print(f"Error starting static file server: {e}")
     sys.exit(1)
 
-def get():
+
+def log():
   parser = argparse.ArgumentParser(description="""\
-Test request to Lambda function by directly importing and executing lambda_handler.
+Retrieve recent Lambda function logs from CloudWatch.
 """, formatter_class = argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument("--version", action="version", version='%(prog)s 0.0.1')
-  parser.add_argument("-p", "--path", default="/", help="path to test (default: /)")
-  parser.add_argument("-m", "--method", default="GET", help="HTTP method (default: GET)")
-  parser.add_argument("-e", "--event-file", help="custom event JSON file to use for testing")
-  parser.add_argument("-d", "--lambda-dir", default="Lambda", help="Lambda function directory (default: Lambda)")
-  parser.add_argument("-b", "--body", help="request body for POST/PUT requests")
+  parser.add_argument("-f", "--function-name", help="Lambda function name (required)")
+  parser.add_argument("-l", "--limit", type=int, default=50, help="maximum number of log events to retrieve (default: 50)")
+  parser.add_argument("--hours", type=int, default=1, help="number of hours to look back for logs (default: 1)")
+  parser.add_argument("-r", "--region", default="ap-northeast-1", help="AWS region (default: ap-northeast-1)")
+  parser.add_argument("--start-time", help="start time in ISO format (e.g., 2025-01-01T00:00:00)")
+  parser.add_argument("--end-time", help="end time in ISO format (e.g., 2025-01-01T23:59:59)")
   parser.add_argument("function", metavar="function", help="function to run")
   options = parser.parse_args()
   
-  # Check if Lambda directory exists
-  lambda_dir = os.path.abspath(options.lambda_dir)
-  lambda_file = os.path.join(lambda_dir, "lambda_function.py")
-  
-  if not os.path.exists(lambda_dir):
-    print(f"Error: Lambda directory '{lambda_dir}' does not exist")
+  if not options.function_name:
+    print("Error: Lambda function name is required. Use -f/--function-name to specify it.")
     sys.exit(1)
-    
-  if not os.path.exists(lambda_file):
-    print(f"Error: Lambda function file '{lambda_file}' does not exist")
-    sys.exit(1)
-  
-  # Generate event data
-  if options.event_file:
-    # Use custom event file
-    if not os.path.exists(options.event_file):
-      print(f"Error: Event file '{options.event_file}' does not exist")
-      sys.exit(1)
-    
-    print(f"Testing with custom event file: {options.event_file}")
-    with open(options.event_file, 'r') as f:
-      event_data = json.load(f)
-  else:
-    # Generate simple event for the specified path and method
-    event_data = {
-      "path": options.path,
-      "requestContext": {
-        "httpMethod": options.method
-      },
-      "body": options.body,
-      "headers": {
-        "Content-Type": "application/json" if options.body else "text/html"
-      },
-      "queryStringParameters": None,
-      "pathParameters": None
-    }
-    print(f"Testing {options.method} request to {options.path}")
   
   try:
-    # Preserve original Python path (including installed packages)
-    original_path = sys.path.copy()
+    # Initialize CloudWatch Logs client
+    logs_client = boto3.client('logs', region_name=options.region)
     
-    # Add Lambda directory to Python path (highest priority)
-    sys.path.insert(0, lambda_dir)
+    # Construct log group name (Lambda functions use /aws/lambda/<function-name>)
+    log_group_name = f"/aws/lambda/{options.function_name}"
     
-    # Add hads library path (relative to this script) - second priority
-    hads_lib_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
-    if os.path.exists(hads_lib_path):
-      sys.path.insert(1, hads_lib_path)  # Insert after Lambda directory
-      print(f"Added hads library path: {hads_lib_path}")
+    # Calculate time range
+    if options.start_time and options.end_time:
+      start_time = datetime.fromisoformat(options.start_time)
+      end_time = datetime.fromisoformat(options.end_time)
     else:
-      print(f"Warning: hads library path not found: {hads_lib_path}")
-      # Try to find hads in current working directory structure
-      cwd_hads_path = os.path.join(os.getcwd(), 'hads', 'lib')
-      if os.path.exists(cwd_hads_path):
-        sys.path.insert(1, cwd_hads_path)
-        print(f"Added alternative hads library path: {cwd_hads_path}")
+      end_time = datetime.now()
+      start_time = end_time - timedelta(hours=options.hours)
     
-    # Debug: Print Python path for troubleshooting
-    print(f"Python path: {sys.path[:5]}...")  # Show first 5 entries
+    # Convert to milliseconds since epoch
+    start_time_ms = int(start_time.timestamp() * 1000)
+    end_time_ms = int(end_time.timestamp() * 1000)
     
-    # Import lambda function module
-    print(f"Importing lambda_handler from {lambda_file}")
-    spec = importlib.util.spec_from_file_location("lambda_function", lambda_file)
-    lambda_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(lambda_module)
+    print(f"Retrieving logs for Lambda function: {options.function_name}")
+    print(f"Log group: {log_group_name}")
+    print(f"Time range: {start_time.isoformat()} to {end_time.isoformat()}")
+    print(f"Region: {options.region}")
+    print(f"Limit: {options.limit} events")
+    print("-" * 80)
     
-    # Execute lambda_handler
-    print("Executing lambda_handler...")
-    print(f"Event: {json.dumps(event_data, indent=2)}")
-    print("-" * 50)
-    
-    response = lambda_module.lambda_handler(event_data, None)
-    
-    print("Response:")
-    print(json.dumps(response, indent=2, ensure_ascii=False))
-    print("-" * 50)
-    print(f"Status Code: {response.get('statusCode', 'N/A')}")
-    
-    if 'headers' in response:
-      print("Headers:")
-      for key, value in response['headers'].items():
-        print(f"  {key}: {value}")
-    
-  except ImportError as e:
-    print(f"Error importing lambda function: {e}")
-    print("Make sure all dependencies are installed and accessible")
-    sys.exit(1)
+    # Get log events
+    try:
+      response = logs_client.filter_log_events(
+        logGroupName=log_group_name,
+        startTime=start_time_ms,
+        endTime=end_time_ms,
+        limit=options.limit
+      )
+      
+      events = response.get('events', [])
+      
+      if not events:
+        print("No log events found in the specified time range.")
+        print("\nTroubleshooting:")
+        print(f"1. Check if the Lambda function '{options.function_name}' exists")
+        print(f"2. Verify the log group '{log_group_name}' exists")
+        print(f"3. Ensure your AWS credentials have CloudWatch Logs read permissions")
+        print(f"4. Try extending the time range with --hours option")
+        return
+      
+      print(f"Found {len(events)} log events:\n")
+      
+      for event in events:
+        timestamp = datetime.fromtimestamp(event['timestamp'] / 1000)
+        message = event['message'].rstrip('\n')
+        
+        print(f"[{timestamp.isoformat()}] {message}")
+      
+      print("-" * 80)
+      print(f"Retrieved {len(events)} log events from {log_group_name}")
+      
+      # Check if there might be more logs
+      if len(events) == options.limit:
+        print(f"Note: Result limited to {options.limit} events. There might be more logs available.")
+        print("Use --limit option to retrieve more events.")
+        
+    except logs_client.exceptions.ResourceNotFoundException:
+      print(f"Error: Log group '{log_group_name}' not found.")
+      print(f"Make sure the Lambda function '{options.function_name}' exists and has been invoked at least once.")
+    except Exception as e:
+      print(f"Error retrieving logs: {e}")
+      sys.exit(1)
+      
   except Exception as e:
-    print(f"Error executing lambda_handler: {e}")
-    import traceback
-    traceback.print_exc()
+    print(f"Error initializing AWS client: {e}")
+    print("Make sure your AWS credentials are configured correctly.")
     sys.exit(1)
-  finally:
-    # Restore original Python path
-    sys.path = original_path
 
 def main():
   if len(sys.argv) == 1:
@@ -418,8 +403,8 @@ def main():
       proxy()
     elif sys.argv[1] == "static":
       static()
-    elif sys.argv[1] == "get":
-      get()
+    elif sys.argv[1] == "log":
+      log()
     else:
       print(f"Unknown function: {sys.argv[1]}")
       print()

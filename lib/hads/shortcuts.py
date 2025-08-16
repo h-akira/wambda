@@ -63,22 +63,35 @@ def static(master, file_path):
     # 完全なURLパスを構築
     return _build_full_path(mapping_path, static_url, file_path)
 
-def redirect(master, url_name, **kwargs):
+def redirect(master, url_name, query_params=None, **kwargs):
     """
     指定されたURL名前にリダイレクトするレスポンスを生成
     
     Args:
         master: Masterインスタンス
         url_name: リダイレクト先のURL名前
+        query_params: クエリパラメータの辞書 (例: {'key': 'value'})
         **kwargs: URLパラメータ
         
     Returns:
         302リダイレクトレスポンス
     """
+    import urllib.parse
+    
+    # ベースURLを生成
+    base_url = reverse(master, url_name, **kwargs)
+    
+    # クエリパラメータがある場合は追加
+    if query_params:
+        query_string = urllib.parse.urlencode(query_params)
+        full_url = f"{base_url}?{query_string}"
+    else:
+        full_url = base_url
+    
     return {
         "statusCode": 302,
         "headers": {
-            "Location": reverse(master, url_name, **kwargs)
+            "Location": full_url
         }
     }
 
