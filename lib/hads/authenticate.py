@@ -7,6 +7,10 @@ from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
 import boto3
 
+class MaintenanceOptionError(Exception):
+    """メンテナンス時に発生するエラー"""
+    pass
+
 # Lambdaコンテナレベルのキャッシュ
 _cognito_settings_cache = None
 
@@ -52,7 +56,14 @@ def login(master, username, password):
         
     Returns:
         bool: ログイン成功の場合True
+        
+    Raises:
+        MaintenanceOptionError: DENY_LOGINが有効な場合
     """
+    # メンテナンス時のログイン拒否チェック
+    if getattr(master.settings, 'DENY_LOGIN', False):
+        raise MaintenanceOptionError("現在、メンテナンスのためログインできません。")
+    
     # NO_AUTHモードの場合、簡易ログイン
     if getattr(master.settings, 'NO_AUTH', False):
         return no_auth_login(master, username)
@@ -114,7 +125,14 @@ def signup(master, username, email, password):
         
     Returns:
         bool: サインアップ成功の場合True
+        
+    Raises:
+        MaintenanceOptionError: DENY_SIGNUPが有効な場合
     """
+    # メンテナンス時のサインアップ拒否チェック
+    if getattr(master.settings, 'DENY_SIGNUP', False):
+        raise MaintenanceOptionError("現在、メンテナンスのため新規登録できません。")
+    
     # NO_AUTHモードの場合、簡易サインアップ（実際にはログインと同じ）
     if getattr(master.settings, 'NO_AUTH', False):
         return no_auth_login(master, username)
