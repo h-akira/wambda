@@ -13,12 +13,29 @@ def login_required(func):
     def wrapper(master, **kwargs):
         if not master.request.auth:
             from hads.authenticate import get_login_url
-            return {
+            response = {
                 'statusCode': 302,
                 'headers': {
                     'Location': get_login_url(master)
                 }
             }
+            
+            # JWT検証失敗時の自動クッキークリア
+            if getattr(master.request, 'clear_auth_cookies', False):
+                if "Set-Cookie" not in response["headers"]:
+                    response["headers"]["Set-Cookie"] = []
+                elif isinstance(response["headers"]["Set-Cookie"], str):
+                    response["headers"]["Set-Cookie"] = [response["headers"]["Set-Cookie"]]
+                
+                # 認証関連のクッキーをクリア
+                auth_cookies = [
+                    "access_token=; Max-Age=0; Path=/; HttpOnly; Secure",
+                    "id_token=; Max-Age=0; Path=/; HttpOnly; Secure", 
+                    "refresh_token=; Max-Age=0; Path=/; HttpOnly; Secure"
+                ]
+                response["headers"]["Set-Cookie"] = auth_cookies
+            
+            return response
         return func(master, **kwargs)
     return wrapper
 
