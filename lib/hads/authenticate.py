@@ -262,6 +262,13 @@ def set_auth_by_cookie(master):
         
         # IDトークンを検証・デコード
         master.request.decode_token = _decode_id_token(master, id_token)
+        
+        # JWT検証に失敗した場合（Noneが返される）
+        if master.request.decode_token is None:
+            # クッキーをクリアして再認証を促す
+            master.request.clear_auth_cookies = True
+            return False
+            
         master.request.username = master.request.decode_token.get('cognito:username')
         
         if master.request.username is None:
@@ -532,18 +539,60 @@ def _decode_id_token(master, id_token, verify=True):
     """IDトークンをデコード"""
     if verify:
         from jwt import decode, PyJWKClient
+        from jwt.exceptions import PyJWKClientError, InvalidTokenError, ExpiredSignatureError
+        import logging
+        import json
+        import base64
+        
+        # 事前チェック: トークンのissuerを確認（完全な検証前の早期チェック）
+        try:
+            # JWTヘッダーとペイロードを取得（署名検証なし）
+            header, payload, signature = id_token.split('.')
+            decoded_payload = json.loads(base64.urlsafe_b64decode(payload + '=='))
+            
+            # 期待されるissuerを生成
+            cognito_settings = get_cognito_settings(master)
+            expected_issuer = f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{cognito_settings["USER_POOL_ID"]}'
+            
+            # issuerが一致しない場合は早期リターン
+            if decoded_payload.get('iss') != expected_issuer:
+                logging.warning(f"Token issuer mismatch. Expected: {expected_issuer}, Got: {decoded_payload.get('iss')}")
+                if hasattr(master.request, 'clear_auth_cookies'):
+                    master.request.clear_auth_cookies = True
+                return None
+                
+        except Exception as e:
+            logging.warning(f"Failed to pre-validate token: {e}")
+            return None
+        
         cognito_settings = get_cognito_settings(master)
         jwk_client = PyJWKClient(
             f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{cognito_settings["USER_POOL_ID"]}/.well-known/jwks.json'
         )
-        signing_key = jwk_client.get_signing_key_from_jwt(id_token)
-        return decode(
-            id_token,
-            signing_key.key,
-            algorithms=['RS256'],
-            audience=cognito_settings['CLIENT_ID'],
-            issuer=f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{cognito_settings["USER_POOL_ID"]}'
-        )
+        
+        try:
+            signing_key = jwk_client.get_signing_key_from_jwt(id_token)
+            return decode(
+                id_token,
+                signing_key.key,
+                algorithms=['RS256'],
+                audience=cognito_settings['CLIENT_ID'],
+                issuer=f'https://cognito-idp.{master.settings.REGION}.amazonaws.com/{cognito_settings["USER_POOL_ID"]}'
+            )
+        except PyJWKClientError as e:
+            logging.warning(f"JWT signing key not found (likely from different User Pool): {e}")
+            # Mark for cookie clearing to force re-authentication
+            if hasattr(master.request, 'clear_auth_cookies'):
+                master.request.clear_auth_cookies = True
+            return None
+        except (InvalidTokenError, ExpiredSignatureError) as e:
+            logging.warning(f"Invalid or expired JWT token: {e}")
+            if hasattr(master.request, 'clear_auth_cookies'):
+                master.request.clear_auth_cookies = True
+            return None
+        except Exception as e:
+            logging.error(f"Unexpected error during JWT verification: {e}")
+            return None
     else:
         from jwt import decode
         return decode(id_token, options={"verify_signature": False})

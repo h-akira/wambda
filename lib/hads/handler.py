@@ -115,6 +115,7 @@ class Request:
     self.username = None
     self.set_cookie = False
     self.clean_cookie = False
+    self.clear_auth_cookies = False  # JWT検証失敗時の自動クッキークリア
     self.access_token = None
     self.id_token = None
     self.refresh_token = None
