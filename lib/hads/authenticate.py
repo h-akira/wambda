@@ -272,6 +272,8 @@ def set_auth_by_cookie(master):
         master.request.username = master.request.decode_token.get('cognito:username')
         
         if master.request.username is None:
+            # ユーザー名が取得できない場合もクッキーをクリア
+            master.request.clear_auth_cookies = True
             return False
         
         # トークンを設定
@@ -289,6 +291,8 @@ def set_auth_by_cookie(master):
         
     except InvalidTokenError as e:
         master.logger.exception(e)
+        # 無効なトークンの場合もクッキーをクリア
+        master.request.clear_auth_cookies = True
         return False
 
 def add_set_cookie_to_header(master, response):
@@ -652,6 +656,7 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         
         if not username:
             master.logger.error("リフレッシュ時にユーザー名を取得できませんでした")
+            master.request.clear_auth_cookies = True
             return False
         
         # シークレットハッシュを計算
@@ -688,6 +693,7 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         if master.request.username is None:
             master.request.auth = False
             master.logger.error("リフレッシュ後にユーザー名がNullです")
+            master.request.clear_auth_cookies = True
             return False
         
         master.request.auth = True
@@ -697,6 +703,8 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         master.logger.error(f"トークンリフレッシュ失敗: {str(e)}")
         master.logger.exception(e)
         master.request.auth = False
+        # Refresh tokenが期限切れなどでリフレッシュに失敗した場合もクッキーをクリア
+        master.request.clear_auth_cookies = True
         return False
 
 def _validate_token_response(response):
