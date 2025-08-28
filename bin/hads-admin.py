@@ -304,6 +304,7 @@ Retrieve recent Lambda function logs from CloudWatch.
   parser.add_argument("-l", "--limit", type=int, default=50, help="maximum number of log events to retrieve (default: 50)")
   parser.add_argument("--hours", type=int, default=1, help="number of hours to look back for logs (default: 1)")
   parser.add_argument("-r", "--region", default="ap-northeast-1", help="AWS region (default: ap-northeast-1)")
+  parser.add_argument("-p", "--profile", help="AWS profile name to use")
   parser.add_argument("--start-time", help="start time in ISO format (e.g., 2025-01-01T00:00:00)")
   parser.add_argument("--end-time", help="end time in ISO format (e.g., 2025-01-01T23:59:59)")
   parser.add_argument("function", metavar="function", help="function to run")
@@ -315,7 +316,8 @@ Retrieve recent Lambda function logs from CloudWatch.
   
   try:
     # Initialize CloudWatch Logs client
-    logs_client = boto3.client('logs', region_name=options.region)
+    session = boto3.Session(profile_name=options.profile) if options.profile else boto3.Session()
+    logs_client = session.client('logs', region_name=options.region)
     
     # Construct log group name (Lambda functions use /aws/lambda/<function-name>)
     log_group_name = f"/aws/lambda/{options.function_name}"
