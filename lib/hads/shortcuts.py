@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta, timezone
 
 def login_required(func):
     """
@@ -27,11 +28,13 @@ def login_required(func):
                 elif isinstance(response["headers"]["Set-Cookie"], str):
                     response["headers"]["Set-Cookie"] = [response["headers"]["Set-Cookie"]]
                 
-                # 認証関連のクッキーをクリア
+                # 認証関連のクッキーをクリア（ブラウザ互換性を考慮）
+                expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
+                secure_flag = "" if master.local else "; Secure"
                 auth_cookies = [
-                    "access_token=; Max-Age=0; Path=/; HttpOnly; Secure",
-                    "id_token=; Max-Age=0; Path=/; HttpOnly; Secure", 
-                    "refresh_token=; Max-Age=0; Path=/; HttpOnly; Secure"
+                    f"access_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}",
+                    f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
+                    f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
                 ]
                 response["headers"]["Set-Cookie"] = auth_cookies
             
@@ -144,11 +147,13 @@ def gen_response(master, body, content_type="text/html; charset=UTF-8", code=200
         elif isinstance(response["headers"]["Set-Cookie"], str):
             response["headers"]["Set-Cookie"] = [response["headers"]["Set-Cookie"]]
         
-        # 認証関連のクッキーをクリア
+        # 認証関連のクッキーをクリア（ブラウザ互換性を考慮）
+        expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        secure_flag = "" if master.local else "; Secure"
         auth_cookies = [
-            "access_token=; Max-Age=0; Path=/; HttpOnly; Secure",
-            "id_token=; Max-Age=0; Path=/; HttpOnly; Secure", 
-            "refresh_token=; Max-Age=0; Path=/; HttpOnly; Secure"
+            f"access_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}",
+            f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
+            f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
         ]
         response["headers"]["Set-Cookie"].extend(auth_cookies)
     
