@@ -602,8 +602,12 @@ def _decode_id_token(master, id_token, verify=True):
             if hasattr(master.request, 'clear_auth_cookies'):
                 master.request.clear_auth_cookies = True
             return None
-        except (InvalidTokenError, ExpiredSignatureError) as e:
+        except ExpiredSignatureError as e:
             logging.warning(f"Invalid or expired JWT token: {e}")
+            # ExpiredSignatureErrorは呼び出し元でリフレッシュ処理を行うため再発生
+            raise e
+        except InvalidTokenError as e:
+            logging.warning(f"Invalid JWT token: {e}")
             if hasattr(master.request, 'clear_auth_cookies'):
                 master.request.clear_auth_cookies = True
             return None
