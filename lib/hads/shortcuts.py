@@ -23,11 +23,6 @@ def login_required(func):
             
             # JWT検証失敗時の自動クッキークリア
             if getattr(master.request, 'clear_auth_cookies', False):
-                if "Set-Cookie" not in response["headers"]:
-                    response["headers"]["Set-Cookie"] = []
-                elif isinstance(response["headers"]["Set-Cookie"], str):
-                    response["headers"]["Set-Cookie"] = [response["headers"]["Set-Cookie"]]
-                
                 # 認証関連のクッキーをクリア（ブラウザ互換性を考慮）
                 expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
                 secure_flag = "" if master.local else "; Secure"
@@ -36,7 +31,11 @@ def login_required(func):
                     f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
                     f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
                 ]
-                response["headers"]["Set-Cookie"] = auth_cookies
+                
+                # multiValueHeadersを使用してCookieを設定（API Gateway互換性のため）
+                if "multiValueHeaders" not in response:
+                    response["multiValueHeaders"] = {}
+                response["multiValueHeaders"]["Set-Cookie"] = auth_cookies
             
             return response
         return func(master, **kwargs)
@@ -142,11 +141,6 @@ def gen_response(master, body, content_type="text/html; charset=UTF-8", code=200
     
     # JWT検証失敗時の自動クッキークリア
     if getattr(master.request, 'clear_auth_cookies', False):
-        if "Set-Cookie" not in response["headers"]:
-            response["headers"]["Set-Cookie"] = []
-        elif isinstance(response["headers"]["Set-Cookie"], str):
-            response["headers"]["Set-Cookie"] = [response["headers"]["Set-Cookie"]]
-        
         # 認証関連のクッキーをクリア（ブラウザ互換性を考慮）
         expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
         secure_flag = "" if master.local else "; Secure"
@@ -155,7 +149,11 @@ def gen_response(master, body, content_type="text/html; charset=UTF-8", code=200
             f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
             f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
         ]
-        response["headers"]["Set-Cookie"].extend(auth_cookies)
+        
+        # multiValueHeadersを使用してCookieを設定（API Gateway互換性のため）
+        if "multiValueHeaders" not in response:
+            response["multiValueHeaders"] = {}
+        response["multiValueHeaders"]["Set-Cookie"] = auth_cookies
     
     return response
 
