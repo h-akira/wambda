@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timedelta, timezone
 
 def login_required(func):
     """
@@ -21,21 +20,6 @@ def login_required(func):
                 }
             }
             
-            # JWT検証失敗時の自動クッキークリア
-            if getattr(master.request, 'clear_auth_cookies', False):
-                # 認証関連のクッキーをクリア（ブラウザ互換性を考慮）
-                expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
-                secure_flag = "" if master.local else "; Secure"
-                auth_cookies = [
-                    f"access_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}",
-                    f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
-                    f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
-                ]
-                
-                # multiValueHeadersを使用してCookieを設定（API Gateway互換性のため）
-                if "multiValueHeaders" not in response:
-                    response["multiValueHeaders"] = {}
-                response["multiValueHeaders"]["Set-Cookie"] = auth_cookies
             
             return response
         return func(master, **kwargs)
@@ -139,21 +123,6 @@ def gen_response(master, body, content_type="text/html; charset=UTF-8", code=200
     if isBase64Encoded is not None:
         response["isBase64Encoded"] = isBase64Encoded
     
-    # JWT検証失敗時の自動クッキークリア
-    if getattr(master.request, 'clear_auth_cookies', False):
-        # 認証関連のクッキーをクリア（ブラウザ互換性を考慮）
-        expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
-        secure_flag = "" if master.local else "; Secure"
-        auth_cookies = [
-            f"access_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}",
-            f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
-            f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
-        ]
-        
-        # multiValueHeadersを使用してCookieを設定（API Gateway互換性のため）
-        if "multiValueHeaders" not in response:
-            response["multiValueHeaders"] = {}
-        response["multiValueHeaders"]["Set-Cookie"] = auth_cookies
     
     return response
 

@@ -306,6 +306,8 @@ def add_set_cookie_to_header(master, response):
     Returns:
         dict: 更新されたレスポンス辞書
     """
+    cookies = None
+    
     if master.request.set_cookie:
         # NO_AUTHモードの場合、簡易Cookieを生成
         if getattr(master.settings, 'NO_AUTH', False):
@@ -318,7 +320,18 @@ def add_set_cookie_to_header(master, response):
             cookies = _generate_no_auth_clear_cookies()
         else:
             cookies = _generate_clear_cookies()
-    else:
+    elif getattr(master.request, 'clear_auth_cookies', False):
+        # JWT検証失敗時の自動クッキークリア（ブラウザ互換性を考慮）
+        from datetime import datetime, timedelta, timezone
+        expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        secure_flag = "" if master.local else "; Secure"
+        cookies = [
+            f"access_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}",
+            f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
+            f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
+        ]
+    
+    if cookies is None:
         return response
     
     # レスポンスヘッダーにCookieを追加
