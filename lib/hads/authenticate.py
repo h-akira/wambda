@@ -320,7 +320,7 @@ def add_set_cookie_to_header(master, response):
             cookies = _generate_no_auth_clear_cookies()
         else:
             cookies = _generate_clear_cookies()
-    elif getattr(master.request, 'clear_auth_cookies', False):
+    elif master.request.clear_auth_cookies:
         # JWT検証失敗時の自動クッキークリア（ブラウザ互換性を考慮）
         from datetime import datetime, timedelta, timezone
         expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
@@ -574,8 +574,7 @@ def _decode_id_token(master, id_token, verify=True):
             # issuerが一致しない場合は早期リターン
             if decoded_payload.get('iss') != expected_issuer:
                 logging.warning(f"Token issuer mismatch. Expected: {expected_issuer}, Got: {decoded_payload.get('iss')}")
-                if hasattr(master.request, 'clear_auth_cookies'):
-                    master.request.clear_auth_cookies = True
+                master.request.clear_auth_cookies = True
                 return None
                 
         except Exception as e:
@@ -599,8 +598,7 @@ def _decode_id_token(master, id_token, verify=True):
         except PyJWKClientError as e:
             logging.warning(f"JWT signing key not found (likely from different User Pool): {e}")
             # Mark for cookie clearing to force re-authentication
-            if hasattr(master.request, 'clear_auth_cookies'):
-                master.request.clear_auth_cookies = True
+            master.request.clear_auth_cookies = True
             return None
         except ExpiredSignatureError as e:
             logging.warning(f"Invalid or expired JWT token: {e}")
@@ -608,8 +606,7 @@ def _decode_id_token(master, id_token, verify=True):
             raise e
         except InvalidTokenError as e:
             logging.warning(f"Invalid JWT token: {e}")
-            if hasattr(master.request, 'clear_auth_cookies'):
-                master.request.clear_auth_cookies = True
+            master.request.clear_auth_cookies = True
             return None
         except Exception as e:
             logging.error(f"Unexpected error during JWT verification: {e}")
