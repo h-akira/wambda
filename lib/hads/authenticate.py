@@ -266,14 +266,14 @@ def set_auth_by_cookie(master):
         # JWT検証に失敗した場合（Noneが返される）
         if master.request.decode_token is None:
             # クッキーをクリアして再認証を促す
-            master.request.clear_auth_cookies = True
+            master.request.clean_cookie = True
             return False
             
         master.request.username = master.request.decode_token.get('cognito:username')
         
         if master.request.username is None:
             # ユーザー名が取得できない場合もクッキーをクリア
-            master.request.clear_auth_cookies = True
+            master.request.clean_cookie = True
             return False
         
         # トークンを設定
@@ -292,7 +292,7 @@ def set_auth_by_cookie(master):
     except InvalidTokenError as e:
         master.logger.exception(e)
         # 無効なトークンの場合もクッキーをクリア
-        master.request.clear_auth_cookies = True
+        master.request.clean_cookie = True
         return False
 
 def add_set_cookie_to_header(master, response):
@@ -320,16 +320,6 @@ def add_set_cookie_to_header(master, response):
             cookies = _generate_no_auth_clear_cookies()
         else:
             cookies = _generate_clear_cookies()
-    elif master.request.clear_auth_cookies:
-        # JWT検証失敗時の自動クッキークリア（ブラウザ互換性を考慮）
-        from datetime import datetime, timedelta, timezone
-        expired_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S GMT')
-        secure_flag = "" if master.local else "; Secure"
-        cookies = [
-            f"access_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}",
-            f"id_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}", 
-            f"refresh_token=; Path=/; Expires={expired_date}; HttpOnly{secure_flag}"
-        ]
     
     if cookies is None:
         return response
@@ -574,7 +564,7 @@ def _decode_id_token(master, id_token, verify=True):
             # issuerが一致しない場合は早期リターン
             if decoded_payload.get('iss') != expected_issuer:
                 logging.warning(f"Token issuer mismatch. Expected: {expected_issuer}, Got: {decoded_payload.get('iss')}")
-                master.request.clear_auth_cookies = True
+                master.request.clean_cookie = True
                 return None
                 
         except Exception as e:
@@ -598,7 +588,7 @@ def _decode_id_token(master, id_token, verify=True):
         except PyJWKClientError as e:
             logging.warning(f"JWT signing key not found (likely from different User Pool): {e}")
             # Mark for cookie clearing to force re-authentication
-            master.request.clear_auth_cookies = True
+            master.request.clean_cookie = True
             return None
         except ExpiredSignatureError as e:
             logging.warning(f"Invalid or expired JWT token: {e}")
@@ -606,7 +596,7 @@ def _decode_id_token(master, id_token, verify=True):
             raise e
         except InvalidTokenError as e:
             logging.warning(f"Invalid JWT token: {e}")
-            master.request.clear_auth_cookies = True
+            master.request.clean_cookie = True
             return None
         except Exception as e:
             logging.error(f"Unexpected error during JWT verification: {e}")
@@ -670,7 +660,7 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         
         if not username:
             master.logger.error("リフレッシュ時にユーザー名を取得できませんでした")
-            master.request.clear_auth_cookies = True
+            master.request.clean_cookie = True
             return False
         
         # シークレットハッシュを計算
@@ -707,7 +697,7 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         if master.request.username is None:
             master.request.auth = False
             master.logger.error("リフレッシュ後にユーザー名がNullです")
-            master.request.clear_auth_cookies = True
+            master.request.clean_cookie = True
             return False
         
         master.request.auth = True
@@ -718,7 +708,7 @@ def _refresh_tokens(master, refresh_token, old_id_token):
         master.logger.exception(e)
         master.request.auth = False
         # Refresh tokenが期限切れなどでリフレッシュに失敗した場合もクッキーをクリア
-        master.request.clear_auth_cookies = True
+        master.request.clean_cookie = True
         return False
 
 def _validate_token_response(response):
