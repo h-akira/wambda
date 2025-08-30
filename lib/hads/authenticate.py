@@ -287,6 +287,7 @@ def set_auth_by_cookie(master):
         
     except ExpiredSignatureError:
         # トークンが期限切れの場合、リフレッシュトークンで更新
+        master.logger.info("JWTトークンの期限切れを検出、リフレッシュトークンで更新を試行")
         return _refresh_tokens(master, refresh_token, id_token)
         
     except InvalidTokenError as e:
@@ -649,6 +650,7 @@ def _extract_tokens_from_cookie(master):
 
 def _refresh_tokens(master, refresh_token, old_id_token):
     """リフレッシュトークンで新しいトークンを取得"""
+    master.logger.info("トークンリフレッシュを開始")
     import boto3
     
     client = boto3.client('cognito-idp', region_name=master.settings.REGION)
@@ -701,6 +703,7 @@ def _refresh_tokens(master, refresh_token, old_id_token):
             return False
         
         master.request.auth = True
+        master.logger.info(f"トークンリフレッシュ成功: ユーザー {master.request.username}")
         return True
         
     except Exception as e:
