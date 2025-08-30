@@ -45,7 +45,20 @@ class Master:
   def _set_logger(self):
     """ロガーを設定します。"""
     self.logger = logging.getLogger()
-    self.logger.setLevel(logging.INFO)
+    
+    # settings.pyからログレベルを取得（未定義の場合はINFOをデフォルト）
+    log_level_str = getattr(self.settings, 'LOG_LEVEL', 'INFO').upper()
+    
+    # ログレベル文字列を対応する定数に変換
+    log_level_map = {
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR
+    }
+    
+    log_level = log_level_map.get(log_level_str, logging.INFO)
+    self.logger.setLevel(log_level)
 
   def _set_use_mock(self):
     """モックを使用するかどうかを判定します。"""
