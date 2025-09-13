@@ -1,6 +1,6 @@
 # デプロイメントガイド
 
-このガイドでは、HADSアプリケーションをAWS Lambdaにデプロイする方法を詳しく説明します。
+このガイドでは、WAMBDAアプリケーションをAWS Lambdaにデプロイする方法を詳しく説明します。
 
 ## 目次
 - [デプロイメント概要](#デプロイメント概要)
@@ -42,7 +42,7 @@
 
 ```bash
 # プロジェクトディレクトリに移動
-cd your-hads-project
+cd your-wambda-project
 
 # 依存関係をインストール
 mkdir deployment-package
@@ -65,7 +65,7 @@ cd ..
 ```bash
 # Lambda関数を作成
 aws lambda create-function \
-    --function-name hads-app \
+    --function-name wambda-app \
     --runtime python3.9 \
     --role arn:aws:iam::YOUR_ACCOUNT_ID:role/lambda-execution-role \
     --handler handler.main \
@@ -78,7 +78,7 @@ aws lambda create-function \
 
 ```bash
 # REST APIを作成
-aws apigateway create-rest-api --name hads-api
+aws apigateway create-rest-api --name wambda-api
 
 # リソースとメソッドを設定
 API_ID="your-api-id"
@@ -103,7 +103,7 @@ aws apigateway put-method \
 ```bash
 # コードを更新
 aws lambda update-function-code \
-    --function-name hads-app \
+    --function-name wambda-app \
     --zip-file fileb://deployment-package.zip
 ```
 
@@ -124,7 +124,7 @@ npm install -g serverless
 
 ```yaml
 # serverless.yml
-service: hads-app
+service: wambda-app
 
 frameworkVersion: '3'
 
@@ -236,7 +236,7 @@ custom:
 # template.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: HADS Application
+Description: WAMBDA Application
 
 Globals:
   Function:
@@ -286,7 +286,7 @@ Resources:
             Method: ANY
       Environment:
         Variables:
-          DATABASE_URL: !Sub "{{resolve:ssm:/hads/${Stage}/database-url}}"
+          DATABASE_URL: !Sub "{{resolve:ssm:/wambda/${Stage}/database-url}}"
 
   TodoTable:
     Type: AWS::DynamoDB::Table
@@ -306,7 +306,7 @@ Outputs:
     Value: !Sub "https://${HadsApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
     
   HadsFunctionArn:
-    Description: "HADS Lambda Function ARN"
+    Description: "WAMBDA Lambda Function ARN"
     Value: !GetAtt HadsFunction.Arn
 ```
 
@@ -319,9 +319,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "hads-app"
+stack_name = "wambda-app"
 s3_bucket = "your-sam-deployment-bucket"
-s3_prefix = "hads-app"
+s3_prefix = "wambda-app"
 region = "us-east-1"
 capabilities = "CAPABILITY_IAM"
 parameter_overrides = "Stage=dev"
@@ -329,7 +329,7 @@ parameter_overrides = "Stage=dev"
 [prod]
 [prod.deploy]
 [prod.deploy.parameters]
-stack_name = "hads-app-prod"
+stack_name = "wambda-app-prod"
 parameter_overrides = "Stage=prod"
 ```
 
@@ -357,7 +357,7 @@ sam deploy --config-env prod
 
 ```yaml
 # .github/workflows/deploy.yml
-name: Deploy HADS Application
+name: Deploy WAMBDA Application
 
 on:
   push:
@@ -492,12 +492,12 @@ artifacts:
 ```bash
 # AWS Systems Manager Parameter Store を使用
 aws ssm put-parameter \
-    --name "/hads/dev/database-url" \
+    --name "/wambda/dev/database-url" \
     --value "your-database-url" \
     --type "SecureString"
 
 aws ssm put-parameter \
-    --name "/hads/prod/database-url" \
+    --name "/wambda/prod/database-url" \
     --value "your-production-database-url" \
     --type "SecureString"
 ```
@@ -525,7 +525,7 @@ def get_parameter(name, with_decryption=True):
 STAGE = os.getenv('STAGE', 'dev')
 DATABASE_URL = (
     os.getenv('DATABASE_URL') or 
-    get_parameter(f'/hads/{STAGE}/database-url')
+    get_parameter(f'/wambda/{STAGE}/database-url')
 )
 ```
 
@@ -533,12 +533,12 @@ DATABASE_URL = (
 
 ```yaml
 # environments/dev.yml
-DATABASE_URL: "postgresql://localhost:5432/hads_dev"
+DATABASE_URL: "postgresql://localhost:5432/wambda_dev"
 DEBUG: true
 CORS_ORIGINS: "*"
 
 # environments/prod.yml
-DATABASE_URL: "${ssm:/hads/prod/database-url}"
+DATABASE_URL: "${ssm:/wambda/prod/database-url}"
 DEBUG: false
 CORS_ORIGINS: "https://yourapp.com"
 ```
@@ -631,7 +631,7 @@ def monitor_performance(metric_name):
 
 def put_metric(metric_name, value, unit="Count"):
     cloudwatch.put_metric_data(
-        Namespace='HADS/Application',
+        Namespace='WAMBDA/Application',
         MetricData=[{
             'MetricName': metric_name,
             'Value': value,
@@ -698,7 +698,7 @@ serverless deploy --stage dev
 serverless logs --function api --stage dev --tail
 
 # AWS CLI でログ確認
-aws logs tail /aws/lambda/hads-app-dev-api --follow
+aws logs tail /aws/lambda/wambda-app-dev-api --follow
 ```
 
 ---

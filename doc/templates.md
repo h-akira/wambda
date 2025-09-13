@@ -1,17 +1,17 @@
 # テンプレートシステム
 
-HADSはJinja2テンプレートエンジンを使用して、動的なHTMLページを生成します。このページでは、HADSでのテンプレートシステムの使い方を詳しく説明します。
+WAMBDAはJinja2テンプレートエンジンを使用して、動的なHTMLページを生成します。このページでは、WAMBDAでのテンプレートシステムの使い方を詳しく説明します。
 
 ## 🎨 基本概念
 
 ### Jinja2テンプレートエンジン
 
-HADSはJinja2を使用しており、以下の機能を提供します：
+WAMBDAはJinja2を使用しており、以下の機能を提供します：
 - **変数展開**: `{{ variable }}`
 - **制御構造**: `{% if %}`, `{% for %}`, `{% block %}`
 - **テンプレート継承**: `{% extends %}`
 - **フィルター**: `{{ value|filter }}`
-- **カスタム関数**: HADS独自の関数
+- **カスタム関数**: WAMBDA独自の関数
 
 ### テンプレートディレクトリ
 
@@ -42,7 +42,7 @@ Lambda/templates/
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ title | default('HADSアプリ') }}{% endblock %}</title>
+    <title>{% block title %}{{ title | default('WAMBDAアプリ') }}{% endblock %}</title>
     
     <!-- CSS -->
     <link href="{{ static(master, 'css/bootstrap.min.css') }}" rel="stylesheet">
@@ -51,7 +51,7 @@ Lambda/templates/
     
     <!-- メタタグ -->
     {% block meta %}
-    <meta name="description" content="HADSで構築されたWebアプリケーション">
+    <meta name="description" content="WAMBDAで構築されたWebアプリケーション">
     <meta name="author" content="Your Name">
     {% endblock %}
 </head>
@@ -61,7 +61,7 @@ Lambda/templates/
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{{ reverse(master, 'index') }}">
-                📱 HADSアプリ
+                📱 WAMBDAアプリ
             </a>
             
             <div class="navbar-nav ms-auto">
@@ -102,9 +102,9 @@ Lambda/templates/
     {% block footer %}
     <footer class="bg-light py-4 mt-5">
         <div class="container text-center">
-            <p class="mb-0">&copy; 2024 HADSアプリケーション. All rights reserved.</p>
+            <p class="mb-0">&copy; 2024 WAMBDAアプリケーション. All rights reserved.</p>
             <p class="mb-0">
-                <small>Powered by <a href="https://github.com/h-akira/hads">HADS</a></small>
+                <small>Powered by <a href="https://github.com/h-akira/wambda">WAMBDA</a></small>
             </p>
         </div>
     </footer>
@@ -189,9 +189,9 @@ console.log("ブログページが読み込まれました");
 {% endblock %}
 ```
 
-## 🔧 HADS組み込み関数
+## 🔧 WAMBDA組み込み関数
 
-HADSは以下の関数をテンプレート内で使用できます：
+WAMBDAは以下の関数をテンプレート内で使用できます：
 
 ### static() - 静的ファイルURL生成
 
@@ -524,7 +524,7 @@ HADSは以下の関数をテンプレート内で使用できます：
 <!-- レスポンシブナビゲーション -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="{{ reverse(master, 'index') }}">HADSアプリ</a>
+        <a class="navbar-brand" href="{{ reverse(master, 'index') }}">WAMBDAアプリ</a>
         
         <!-- ハンバーガーメニュー -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
@@ -680,11 +680,11 @@ templates/
 ```html
 <!-- templates/base.html -->
 <head>
-    <title>{% block title %}{{ title | default('HADSアプリ') }}{% endblock %}</title>
+    <title>{% block title %}{{ title | default('WAMBDAアプリ') }}{% endblock %}</title>
     
     {% block meta %}
-    <meta name="description" content="{% block description %}HADSで構築されたWebアプリケーション{% endblock %}">
-    <meta name="keywords" content="{% block keywords %}HADS,サーバレス,Webアプリ{% endblock %}">
+    <meta name="description" content="{% block description %}WAMBDAで構築されたWebアプリケーション{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}WAMBDA,サーバレス,Webアプリ{% endblock %}">
     <meta name="author" content="{% block author %}Your Name{% endblock %}">
     
     <!-- Open Graph -->

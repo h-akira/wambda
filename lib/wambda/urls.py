@@ -1,6 +1,6 @@
 import importlib
 import os
-from hads.handler import Master
+from wambda.handler import Master
 
 class NotMatched(Exception):
     """URLパターンが一致しなかった場合に発生する例外"""

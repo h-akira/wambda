@@ -1,6 +1,6 @@
 # ベストプラクティス
 
-このガイドでは、HADSフレームワークを使用する際の推奨パターンとベストプラクティスをまとめています。
+このガイドでは、WAMBDAフレームワークを使用する際の推奨パターンとベストプラクティスをまとめています。
 
 ## 目次
 - [プロジェクト設計](#プロジェクト設計)
@@ -380,7 +380,7 @@ def protected_handler(event, context):
 ### 環境分離
 ```yaml
 # serverless.yml
-service: hads-app
+service: wambda-app
 
 provider:
   name: aws
@@ -402,11 +402,11 @@ functions:
 
 # 環境変数ファイル
 # .env.dev
-DATABASE_URL_dev=postgresql://localhost:5432/hads_dev
+DATABASE_URL_dev=postgresql://localhost:5432/wambda_dev
 COGNITO_USER_POOL_ID_dev=us-east-1_xxxxxxx
 
 # .env.prod
-DATABASE_URL_prod=postgresql://prod-host:5432/hads_prod
+DATABASE_URL_prod=postgresql://prod-host:5432/wambda_prod
 COGNITO_USER_POOL_ID_prod=us-east-1_yyyyyyy
 ```
 
@@ -512,7 +512,7 @@ cloudwatch = boto3.client('cloudwatch')
 def put_custom_metric(metric_name, value, unit='Count', **dimensions):
     """CloudWatchにカスタムメトリクスを送信"""
     cloudwatch.put_metric_data(
-        Namespace='HADS/Application',
+        Namespace='WAMBDA/Application',
         MetricData=[
             {
                 'MetricName': metric_name,
@@ -895,7 +895,7 @@ class MockTestStrategy:
 
 ```yaml
 # .github/workflows/test.yml
-name: HADS Test Pipeline
+name: WAMBDA Test Pipeline
 
 on: [push, pull_request]
 
@@ -921,9 +921,9 @@ jobs:
     - name: Run Mock Tests
       run: |
         # Mock環境でのテスト実行
-        hads-admin.py get -p /
-        hads-admin.py get -p /api/users
-        hads-admin.py get -p /api/health
+        wambda-admin.py get -p /
+        wambda-admin.py get -p /api/users
+        wambda-admin.py get -p /api/health
         
     - name: Validate Mock Data
       run: |
@@ -1022,7 +1022,7 @@ def debug_mock_status():
     from project.settings import USE_MOCK, DEBUG
     import os
     
-    print("=== HADS Mock Status ===")
+    print("=== WAMBDA Mock Status ===")
     print(f"USE_MOCK: {USE_MOCK}")
     print(f"DEBUG: {DEBUG}")
     print(f"Environment: {os.getenv('ENVIRONMENT', 'development')}")

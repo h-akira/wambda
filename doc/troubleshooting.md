@@ -1,6 +1,6 @@
 # トラブルシューティング
 
-このガイドでは、HADSフレームワークを使用する際によく発生する問題とその解決方法をまとめています。
+このガイドでは、WAMBDAフレームワークを使用する際によく発生する問題とその解決方法をまとめています。
 
 ## 目次
 - [一般的な問題](#一般的な問題)
@@ -15,16 +15,16 @@
 
 ## 一般的な問題
 
-### ImportError: No module named 'hads'
+### ImportError: No module named 'wambda'
 
-**症状**: HADSモジュールがインポートできない
+**症状**: WAMBDAモジュールがインポートできない
 
 **原因と解決方法**:
 
 1. **インストールの確認**:
 ```bash
-pip show hads
-pip list | grep hads
+pip show wambda
+pip list | grep wambda
 ```
 
 2. **パスの確認**:
@@ -47,36 +47,36 @@ source env/bin/activate  # macOS/Linux
 # または
 env\Scripts\activate  # Windows
 
-# HADSのインストール
+# WAMBDAのインストール
 pip install -e .
 ```
 
-### AttributeError: module 'hads' has no attribute 'X'
+### AttributeError: module 'wambda' has no attribute 'X'
 
-**症状**: HADSの属性や関数が見つからない
+**症状**: WAMBDAの属性や関数が見つからない
 
 **解決方法**:
 
 1. **バージョン確認**:
 ```bash
-pip show hads
+pip show wambda
 ```
 
 2. **ドキュメント確認**:
 ```python
-import hads
-help(hads)
-dir(hads)
+import wambda
+help(wambda)
+dir(wambda)
 ```
 
 3. **正しいインポート**:
 ```python
 # ❌ 間違い
-from hads import nonexistent_function
+from wambda import nonexistent_function
 
 # ✅ 正しい
-from hads.handler import handler
-from hads.urls import path
+from wambda.handler import handler
+from wambda.urls import path
 ```
 
 ---
@@ -85,7 +85,7 @@ from hads.urls import path
 
 ### ローカルサーバーが起動しない
 
-**症状**: `python -m hads.local_server`でエラーが発生
+**症状**: `python -m wambda.local_server`でエラーが発生
 
 **解決手順**:
 
@@ -98,7 +98,7 @@ netstat -an | grep 8000
 
 2. **別のポートで起動**:
 ```bash
-python -m hads.local_server --port 8080
+python -m wambda.local_server --port 8080
 ```
 
 3. **設定ファイルの確認**:
@@ -144,7 +144,7 @@ ls -la templates/
 3. **パス設定のデバッグ**:
 ```python
 import os
-from hads import get_template_dirs
+from wambda import get_template_dirs
 
 print("Current directory:", os.getcwd())
 print("Template directories:", get_template_dirs())
@@ -182,8 +182,8 @@ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
 
 4. **プロファイル設定**:
 ```bash
-aws configure --profile hads-dev
-export AWS_PROFILE=hads-dev
+aws configure --profile wambda-dev
+export AWS_PROFILE=wambda-dev
 ```
 
 ---
@@ -234,7 +234,7 @@ aws apigateway get-resources --rest-api-id YOUR_API_ID
 2. **URLパターンの確認**:
 ```python
 # urls.py の確認
-from hads.urls import urlpatterns
+from wambda.urls import urlpatterns
 for pattern in urlpatterns:
     print(f"Path: {pattern.path}, Handler: {pattern.handler}")
 ```
@@ -682,7 +682,7 @@ def verify_cognito_token(token):
 
 ### プロキシサーバー経由でログインできない
 
-**症状**: プロキシサーバー（`hads-admin.py proxy`）を使用すると認証が失敗するが、SAM Local直接接続（ポート3000）では正常にログインできる
+**症状**: プロキシサーバー（`wambda-admin.py proxy`）を使用すると認証が失敗するが、SAM Local直接接続（ポート3000）では正常にログインできる
 
 **原因**: プロキシサーバーのリダイレクト処理とCookieヘッダー処理の問題
 
@@ -691,7 +691,7 @@ def verify_cognito_token(token):
 1. **ログでリダイレクト処理を確認**:
 ```bash
 # プロキシサーバー起動（詳細ログ付き）
-hads-admin.py proxy
+wambda-admin.py proxy
 
 # ログイン試行後、以下を確認：
 # - POSTリクエストのResponse status（302である必要がある）
@@ -715,7 +715,7 @@ hads-admin.py proxy
 
 **解決策**:
 
-この問題は以下の要因で発生し、HADSフレームワークで修正済みです：
+この問題は以下の要因で発生し、WAMBDAフレームワークで修正済みです：
 
 1. **リダイレクト自動追跡の無効化**:
    - `urllib.request.urlopen()`はデフォルトで302リダイレクトを自動追跡
@@ -727,7 +727,7 @@ hads-admin.py proxy
 
 **回避策**（古いバージョンの場合）:
 - SAM Local直接接続を使用: `http://localhost:3000`
-- または最新のHADSバージョンにアップデート
+- または最新のWAMBDAバージョンにアップデート
 
 ---
 

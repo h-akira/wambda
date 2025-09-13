@@ -1,11 +1,11 @@
 # API リファレンス
 
-HADSフレームワークのAPIリファレンスです。主要なクラス、関数、メソッドの詳細な使用方法を説明します。
+WAMBDAフレームワークのAPIリファレンスです。主要なクラス、関数、メソッドの詳細な使用方法を説明します。
 
 ## 📚 モジュール構成
 
 ```python
-hads/
+wambda/
 ├── handler.py          # Master, Request クラス
 ├── urls.py            # Path, Router クラス
 ├── shortcuts.py       # ヘルパー関数群
@@ -40,7 +40,7 @@ class Master:
 #### 使用例
 
 ```python
-from hads.handler import Master
+from wambda.handler import Master
 
 def lambda_handler(event, context):
     master = Master(event, context)
@@ -112,7 +112,7 @@ class Path:
 #### 使用例
 
 ```python
-from hads.urls import Path
+from wambda.urls import Path
 from .views import user_detail
 
 # 基本的なパス
@@ -184,7 +184,7 @@ view, kwargs = router.path2view(segments=["user", "123"])
 #### 使用例
 
 ```python
-from hads.urls import Router
+from wambda.urls import Router
 
 # ネストされたルーター
 Router("api", "api.urls", name="api")
@@ -222,7 +222,7 @@ HTTPレスポンス辞書
 #### 使用例
 
 ```python
-from hads.shortcuts import render
+from wambda.shortcuts import render
 
 def my_view(master):
     context = {
@@ -247,7 +247,7 @@ JSON形式のHTTPレスポンスを生成します。
 #### 使用例
 
 ```python
-from hads.shortcuts import json_response
+from wambda.shortcuts import json_response
 
 def api_view(master):
     data = {
@@ -278,7 +278,7 @@ HTTPリダイレクトレスポンス（statusCode: 302）
 #### 使用例
 
 ```python
-from hads.shortcuts import redirect
+from wambda.shortcuts import redirect
 
 def login_view(master):
     # 基本的なリダイレクト
@@ -322,7 +322,7 @@ URL名からURLパスを生成します。
 #### 使用例
 
 ```python
-from hads.shortcuts import reverse
+from wambda.shortcuts import reverse
 
 def my_view(master):
     # ユーザー詳細ページのURL生成
@@ -350,7 +350,7 @@ def my_view(master):
 #### 使用例
 
 ```python
-from hads.shortcuts import static
+from wambda.shortcuts import static
 
 def my_view(master):
     # CSS ファイルのURL
@@ -367,7 +367,7 @@ def my_view(master):
 #### 使用例
 
 ```python
-from hads.shortcuts import login_required
+from wambda.shortcuts import login_required
 
 @login_required
 def protected_view(master):
@@ -391,7 +391,7 @@ def protected_view(master):
 #### 使用例
 
 ```python
-from hads.shortcuts import gen_response
+from wambda.shortcuts import gen_response
 
 def csv_download(master):
     csv_data = "name,email\nJohn,john@example.com"
@@ -454,7 +454,7 @@ cognito.add_set_cookie_to_header(master, response)
 #### 使用例
 
 ```python
-from hads.authenticate import Cognito
+from wambda.authenticate import Cognito
 
 # 設定
 cognito = Cognito(
@@ -599,7 +599,7 @@ logout_url = auth_page.get_logout_url(master)
 URLパターンが一致しなかった場合に発生する例外。
 
 ```python
-from hads.urls import NotMatched
+from wambda.urls import NotMatched
 
 try:
     view, kwargs = router.path2view("/nonexistent")
@@ -613,7 +613,7 @@ except NotMatched:
 URL生成時に未使用のキーワード引数がある場合に発生する例外。
 
 ```python
-from hads.urls import KwargsRemain
+from wambda.urls import KwargsRemain
 
 try:
     url = router.name2path("user_detail", {
@@ -626,11 +626,11 @@ except KwargsRemain as e:
 
 ## 📋 型ヒント
 
-HADSでの型ヒント使用例：
+WAMBDAでの型ヒント使用例：
 
 ```python
 from typing import Dict, Any, Optional, Tuple, Callable
-from hads.handler import Master
+from wambda.handler import Master
 
 # ビュー関数の型定義
 ViewFunction = Callable[[Master], Dict[str, Any]]

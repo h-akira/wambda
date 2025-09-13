@@ -1,6 +1,6 @@
 # サンプルアプリケーション
 
-このページでは、HADSフレームワークを使用したサンプルアプリケーションを紹介します。実際のコードを通じて、HADSの機能と使い方を学ぶことができます。
+このページでは、WAMBDAフレームワークを使用したサンプルアプリケーションを紹介します。実際のコードを通じて、WAMBDAの機能と使い方を学ぶことができます。
 
 ## 目次
 - [1. Hello World API](#1-hello-world-api)
@@ -29,7 +29,7 @@ hello-world/
 
 **requirements.txt**
 ```
-hads
+wambda
 ```
 
 **settings.py**
@@ -43,7 +43,7 @@ CORS_ORIGINS = ['*']
 **urls.py**
 ```python
 # urls.py
-from hads.urls import path
+from wambda.urls import path
 from handler import hello_handler, info_handler
 
 urlpatterns = [
@@ -150,7 +150,7 @@ todo-app/
 
 **requirements.txt**
 ```
-hads
+wambda
 boto3
 ```
 
@@ -370,7 +370,7 @@ def health_handler(event, context):
 **urls.py**
 ```python
 # urls.py
-from hads.urls import path
+from wambda.urls import path
 from handler import todo_list_handler, todo_detail_handler, health_handler
 
 urlpatterns = [
@@ -506,7 +506,7 @@ def require_auth(func):
     return wrapper
 ```
 
-### 詳細なハンドラー実装は [GitHub リポジトリ](https://github.com/example/hads-examples) をご参照ください。
+### 詳細なハンドラー実装は [GitHub リポジトリ](https://github.com/example/wambda-examples) をご参照ください。
 
 ---
 
@@ -624,8 +624,8 @@ Cognitoを使用した管理ダッシュボードの例です。
 
 ### リポジトリのクローン
 ```bash
-git clone https://github.com/example/hads-examples.git
-cd hads-examples
+git clone https://github.com/example/wambda-examples.git
+cd wambda-examples
 ```
 
 ### 個別サンプルのセットアップ
@@ -633,14 +633,14 @@ cd hads-examples
 # Hello World API
 cd hello-world
 pip install -r requirements.txt
-python -m hads.local_server
+python -m wambda.local_server
 
 # Todo アプリケーション
 cd todo-app
 pip install -r requirements.txt
 # DynamoDBテーブル作成
 aws dynamodb create-table --cli-input-json file://table-config.json
-python -m hads.local_server
+python -m wambda.local_server
 ```
 
 ### デプロイ

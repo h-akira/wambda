@@ -61,7 +61,7 @@ def run_lambda_handler(lambda_handler_func, path="/", method="GET", body=None, h
   event = create_test_event(path, method, body, headers, query_params)
   
   if verbose:
-    print(f"=== HADS Debug Mode ===")
+    print(f"=== WAMBDA Debug Mode ===")
     print(f"Testing {method} {path}")
     if body:
       print(f"Body: {body}")
@@ -109,7 +109,7 @@ def parse_debug_args():
     argparse.Namespace: 解析された引数
   """
   parser = argparse.ArgumentParser(
-    description="HADS Lambda Function Debug Tool",
+    description="WAMBDA Lambda Function Debug Tool",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
   )
   
@@ -245,5 +245,5 @@ if __name__ == "__main__":
   print("This module should be imported and used with main_debug_handler()")
   print("Example usage in lambda_function.py:")
   print("  if __name__ == '__main__':")
-  print("    from hads.debug import main_debug_handler")
+  print("    from wambda.debug import main_debug_handler")
   print("    main_debug_handler(lambda_handler)")

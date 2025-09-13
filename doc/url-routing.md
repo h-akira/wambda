@@ -1,10 +1,10 @@
 # URLルーティング
 
-HADSのURLルーティングシステムは、DjangoのURLパターンに似た直感的なAPIを提供します。このページでは、URLルーティングの詳細な使い方を説明します。
+WAMBDAのURLルーティングシステムは、DjangoのURLパターンに似た直感的なAPIを提供します。このページでは、URLルーティングの詳細な使い方を説明します。
 
 ## 🛣️ 基本概念
 
-HADSのURLルーティングは以下の2つの主要コンポーネントで構成されています：
+WAMBDAのURLルーティングは以下の2つの主要コンポーネントで構成されています：
 
 - **Path**: 単一のURLパターンとビュー関数を関連付ける
 - **Router**: 複数のURLパターンをグループ化し、ネストした構造を作る
@@ -14,7 +14,7 @@ HADSのURLルーティングは以下の2つの主要コンポーネントで構
 ### 基本的な使い方
 
 ```python
-from hads.urls import Path
+from wambda.urls import Path
 from .views import index, about, contact
 
 urlpatterns = [
@@ -29,7 +29,7 @@ urlpatterns = [
 URLパスにパラメータを含めることができます：
 
 ```python
-from hads.urls import Path
+from wambda.urls import Path
 from .views import user_detail, post_detail, category_posts
 
 urlpatterns = [
@@ -67,7 +67,7 @@ def article_detail(master, article_id):
 
 ```python
 # project/urls.py
-from hads.urls import Path, Router
+from wambda.urls import Path, Router
 from .views import index
 
 urlpatterns = [
@@ -79,7 +79,7 @@ urlpatterns = [
 
 ```python
 # blog/urls.py
-from hads.urls import Path
+from wambda.urls import Path
 from .views import blog_index, blog_detail
 
 app_name = "blog"  # アプリケーション名（オプション）
@@ -99,7 +99,7 @@ urlpatterns = [
 ]
 
 # api/urls.py
-from hads.urls import Router
+from wambda.urls import Router
 
 urlpatterns = [
     Router("v1", "api.v1.urls", name="v1"),
@@ -107,7 +107,7 @@ urlpatterns = [
 ]
 
 # api/v1/urls.py
-from hads.urls import Path
+from wambda.urls import Path
 from .views import users_list, user_detail
 
 urlpatterns = [
@@ -129,7 +129,7 @@ urlpatterns = [
 ビュー関数内でURLを生成する場合：
 
 ```python
-from hads.shortcuts import reverse
+from wambda.shortcuts import reverse
 
 def my_view(master):
     # 基本的な逆引き
@@ -184,7 +184,7 @@ def search_view(master):
 改良された`redirect`関数を使用してクエリパラメータ付きのリダイレクトを行う：
 
 ```python
-from hads.shortcuts import redirect
+from wambda.shortcuts import redirect
 
 def signup_view(master):
     if master.request.method == 'POST':
@@ -292,7 +292,7 @@ def blog_list(master):
 
 ```python
 # project/urls.py
-from hads.urls import Path, Router
+from wambda.urls import Path, Router
 from .views import index
 
 urlpatterns = [
@@ -304,7 +304,7 @@ urlpatterns = [
 
 ```python
 # blog/urls.py
-from hads.urls import Path, Router
+from wambda.urls import Path, Router
 from .views import (
     blog_index, post_detail, category_list, 
     category_posts, author_posts, tag_posts
@@ -336,7 +336,7 @@ urlpatterns = [
 
 ```python
 # blog/admin/urls.py
-from hads.urls import Path
+from wambda.urls import Path
 from .views import admin_index, post_create, post_edit, post_delete
 
 urlpatterns = [
@@ -351,7 +351,7 @@ urlpatterns = [
 
 ```python
 # blog/views.py
-from hads.shortcuts import render, redirect
+from wambda.shortcuts import render, redirect
 
 def blog_index(master):
     """ブログトップページ"""
@@ -379,7 +379,7 @@ def author_posts(master, author_slug):
 
 ```python
 # settings.pyの設定に基づく条件付きルーティング
-from hads.urls import Path
+from wambda.urls import Path
 from .views import debug_view, production_view
 
 def get_urlpatterns():
@@ -420,7 +420,7 @@ def dynamic_urlpatterns():
 
 ### HTTPメソッドによる分岐
 
-HADSではビュー関数内でHTTPメソッドを処理します：
+WAMBDAではビュー関数内でHTTPメソッドを処理します：
 
 ```python
 def api_endpoint(master):
@@ -535,7 +535,7 @@ def user_detail(master, user_id):
 ```python
 # 良い例
 Path("blog/{year}/{month}/{slug}", post_detail, name="post_detail")
-# /blog/2024/03/introducing-hads
+# /blog/2024/03/introducing-wambda
 
 # 避けるべき例
 Path("post/{id}", post_detail, name="post_detail")

@@ -779,7 +779,7 @@ def _generate_url_from_setting(master, setting_name):
     Returns:
         str: 生成されたURL
     """
-    from hads.shortcuts import reverse
+    from wambda.shortcuts import reverse
     
     # 設定値を取得
     url_setting = getattr(master.settings, setting_name, None)

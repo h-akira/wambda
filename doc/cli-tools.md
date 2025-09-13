@@ -1,10 +1,10 @@
 # コマンドラインツール
 
-HADSは強力なコマンドラインツール `hads-admin.py` を提供し、プロジェクトの作成から開発、テストまでを統合的に管理できます。設定ファイルに依存しない、直感的で使いやすいコマンドライン引数ベースのインターフェースを提供します。
+WAMBDAは強力なコマンドラインツール `wambda-admin.py` を提供し、プロジェクトの作成から開発、テストまでを統合的に管理できます。設定ファイルに依存しない、直感的で使いやすいコマンドライン引数ベースのインターフェースを提供します。
 
-## 🛠️ hads-admin.py の概要
+## 🛠️ wambda-admin.py の概要
 
-`hads-admin.py` はHADSプロジェクトの中心的な管理ツールで、以下の機能を提供します：
+`wambda-admin.py` はWAMBDAプロジェクトの中心的な管理ツールで、以下の機能を提供します：
 
 - **プロジェクト初期化**: テンプレートベースの新規プロジェクト作成
 - **ローカル開発サーバー**: 統合プロキシサーバーと静的ファイル配信
@@ -15,30 +15,30 @@ HADSは強力なコマンドラインツール `hads-admin.py` を提供し、�
 
 ```bash
 # 新しい構文（推奨）
-hads-admin.py <command> [options]
+wambda-admin.py <command> [options]
 
 # 利用可能なコマンド
-hads-admin.py init      # プロジェクト初期化
-hads-admin.py proxy     # プロキシサーバー起動
-hads-admin.py static    # 静的ファイルサーバー起動
-hads-admin.py get       # Lambda関数テスト
-hads-admin.py help      # ヘルプ表示
+wambda-admin.py init      # プロジェクト初期化
+wambda-admin.py proxy     # プロキシサーバー起動
+wambda-admin.py static    # 静的ファイルサーバー起動
+wambda-admin.py get       # Lambda関数テスト
+wambda-admin.py help      # ヘルプ表示
 ```
 
 ## 📋 コマンド詳細仕様
 
 ### 1. init - プロジェクト初期化
 
-新しいHADSプロジェクトをテンプレートから作成します。
+新しいWAMBDAプロジェクトをテンプレートから作成します。
 
 #### 基本使用法
 
 ```bash
 # 対話式でプロジェクト作成
-hads-admin.py init -n my-project
+wambda-admin.py init -n my-project
 
 # テンプレートを指定して作成
-hads-admin.py init -n my-project -t SSR001
+wambda-admin.py init -n my-project -t SSR001
 ```
 
 #### オプション
@@ -59,7 +59,7 @@ hads-admin.py init -n my-project -t SSR001
 
 ```bash
 # 対話式選択
-$ hads-admin.py init -n blog-app
+$ wambda-admin.py init -n blog-app
 Available templates:
   SSR001: Server Side Rendering Template
   API001: API Template (For Vue, React, Angular, etc.)
@@ -67,7 +67,7 @@ Available templates:
 Please select a template: SSR001
 
 # テンプレート指定
-$ hads-admin.py init -n api-server -t API001
+$ wambda-admin.py init -n api-server -t API001
 ```
 
 #### 生成されるファイル構造
@@ -95,10 +95,10 @@ my-project/
 
 ```bash
 # デフォルト設定でプロキシサーバー起動
-hads-admin.py proxy
+wambda-admin.py proxy
 
 # カスタムポート設定
-hads-admin.py proxy -p 9000 -s 3001 --static-port 8081
+wambda-admin.py proxy -p 9000 -s 3001 --static-port 8081
 ```
 
 #### オプション
@@ -128,13 +128,13 @@ graph LR
 
 ```bash
 # 基本起動
-$ hads-admin.py proxy
+$ wambda-admin.py proxy
 Starting proxy server on port 8000
   - Static files (/static*) -> port 8080  
   - API requests -> port 3000
 
 # カスタム設定
-$ hads-admin.py proxy -p 9000 --static-url /assets
+$ wambda-admin.py proxy -p 9000 --static-url /assets
 Starting proxy server on port 9000
   - Static files (/assets*) -> port 8080
   - API requests -> port 3000
@@ -148,10 +148,10 @@ Starting proxy server on port 9000
 
 ```bash
 # デフォルト設定で起動
-hads-admin.py static
+wambda-admin.py static
 
 # カスタム設定で起動  
-hads-admin.py static -p 8081 -d assets --static-url /files
+wambda-admin.py static -p 8081 -d assets --static-url /files
 ```
 
 #### オプション
@@ -166,13 +166,13 @@ hads-admin.py static -p 8081 -d assets --static-url /files
 
 ```bash
 # 基本起動
-$ hads-admin.py static
+$ wambda-admin.py static
 Starting static file server on port 8080
   - Serving files from: /path/to/project/static
   - URL prefix: /static
 
 # カスタム起動
-$ hads-admin.py static -p 9090 -d public --static-url /assets
+$ wambda-admin.py static -p 9090 -d public --static-url /assets
 Starting static file server on port 9090
   - Serving files from: /path/to/project/public  
   - URL prefix: /assets
@@ -186,16 +186,16 @@ lambda_function.pyを直接importしてlambda_handler関数を実行し、高速
 
 ```bash
 # トップページのGETリクエストテスト
-hads-admin.py get
+wambda-admin.py get
 
 # 特定のパスとメソッドをテスト
-hads-admin.py get -p /api/users -m POST
+wambda-admin.py get -p /api/users -m POST
 
 # カスタムイベントファイルでテスト
-hads-admin.py get -e custom-event.json
+wambda-admin.py get -e custom-event.json
 
 # リクエストボディを指定
-hads-admin.py get -p /api/users -m POST -b '{"name":"John","email":"john@example.com"}'
+wambda-admin.py get -p /api/users -m POST -b '{"name":"John","email":"john@example.com"}'
 ```
 
 #### オプション
@@ -212,7 +212,7 @@ hads-admin.py get -p /api/users -m POST -b '{"name":"John","email":"john@example
 
 ```bash
 # 基本テスト
-$ hads-admin.py get
+$ wambda-admin.py get
 Testing GET request to /
 Importing lambda_handler from /path/to/Lambda/lambda_function.py
 Executing lambda_handler...
@@ -239,7 +239,7 @@ Response:
 Status Code: 200
 
 # APIエンドポイントテスト  
-$ hads-admin.py get -p /api/users -m POST -b '{"name":"John"}'
+$ wambda-admin.py get -p /api/users -m POST -b '{"name":"John"}'
 Testing POST request to /api/users
 Importing lambda_handler from /path/to/Lambda/lambda_function.py
 Executing lambda_handler...
@@ -276,7 +276,7 @@ Response:
 
 ```bash
 # カスタムイベントでテスト
-$ hads-admin.py get -e test-user-creation.json
+$ wambda-admin.py get -e test-user-creation.json
 Testing with custom event file: test-user-creation.json
 Importing lambda_handler from /path/to/Lambda/lambda_function.py
 Executing lambda_handler...
@@ -292,7 +292,7 @@ Executing lambda_handler...
 
 #### Mock機能との連携
 
-HADSの組み込みMock機能と連携することで、実際のAWSサービスを使用せずにテストできます：
+WAMBDAの組み込みMock機能と連携することで、実際のAWSサービスを使用せずにテストできます：
 
 ```python
 # Lambda/project/settings.py
@@ -303,16 +303,16 @@ Mock環境でのテスト例：
 
 ```bash
 # Mock環境での基本テスト
-hads-admin.py get -p /
+wambda-admin.py get -p /
 
 # DynamoDBモックデータを使ったAPIテスト
-hads-admin.py get -p /api/users
+wambda-admin.py get -p /api/users
 
 # SSM Parameter Storeモック値を使った設定テスト
-hads-admin.py get -p /config
+wambda-admin.py get -p /config
 
 # 認証機能のモックテスト
-hads-admin.py get -p /profile
+wambda-admin.py get -p /profile
 ```
 
 Mock機能の詳細については[Mock機能とテスト環境](./mock.md)を参照してください。
@@ -322,10 +322,10 @@ Mock機能の詳細については[Mock機能とテスト環境](./mock.md)を�
 利用可能なコマンドとその説明を表示します。
 
 ```bash
-$ hads-admin.py help
-Usage: hads-admin <function>
+$ wambda-admin.py help
+Usage: wambda-admin <function>
 Functions:
-  init: create hads project  
+  init: create wambda project  
   proxy: run proxy server
   static: run static server
   get: test request by directly executing lambda_handler
@@ -337,18 +337,18 @@ Functions:
 
 ```bash
 # 1. プロジェクト作成
-hads-admin.py init -n my-blog-app -t SSR001
+wambda-admin.py init -n my-blog-app -t SSR001
 cd my-blog-app
 
 # 2. ローカルテスト
-hads-admin.py get
+wambda-admin.py get
 
 # 3. 開発サーバー起動
-hads-admin.py proxy  # ブラウザでhttp://localhost:8000にアクセス
+wambda-admin.py proxy  # ブラウザでhttp://localhost:8000にアクセス
 
 # 4. 開発とテスト（別ターミナル）
-hads-admin.py get -p /login
-hads-admin.py get -p /api/users -m POST
+wambda-admin.py get -p /login
+wambda-admin.py get -p /api/users -m POST
 
 # 5. AWS環境へデプロイ（SAM CLI使用）
 sam build
@@ -362,13 +362,13 @@ aws s3 sync static/ s3://your-bucket/static/
 
 ```bash
 # 1. ローカル開発サーバー起動
-hads-admin.py proxy
+wambda-admin.py proxy
 
 # 2. コード変更
 # Lambda/project/views.py を編集...
 
 # 3. 新機能のテスト
-hads-admin.py get -p /new-feature
+wambda-admin.py get -p /new-feature
 
 # 4. 本番デプロイ
 sam build && sam deploy
@@ -396,7 +396,7 @@ sam deploy --config-env production
 
 ### SAM CLI との連携
 
-HADSプロジェクトのデプロイはSAM CLIを直接使用します：
+WAMBDAプロジェクトのデプロイはSAM CLIを直接使用します：
 
 ```bash
 # テンプレート検証
@@ -458,12 +458,12 @@ aws configure list-profiles
 version = 0.1
 
 [default.deploy.parameters]
-stack_name = "hads-dev"
+stack_name = "wambda-dev"
 region = "ap-northeast-1"
 profile = "dev"
 
 [production.deploy.parameters] 
-stack_name = "hads-prod"
+stack_name = "wambda-prod"
 region = "ap-northeast-1"
 profile = "prod"
 ```
@@ -483,14 +483,14 @@ SAM CLI用の設定ファイルでデプロイ設定を管理：
 version = 0.1
 
 [default.deploy.parameters]
-stack_name = "my-hads-app"
+stack_name = "my-wambda-app"
 region = "ap-northeast-1"
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 ```
 
 [production.deploy.parameters]
-stack_name = "my-hads-app-prod"
+stack_name = "my-wambda-app-prod"
 region = "ap-northeast-1" 
 profile = "production"
 capabilities = "CAPABILITY_IAM"
@@ -504,7 +504,7 @@ SAM CloudFormationテンプレート：
 ```yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: HADS Serverless Application
+Description: WAMBDA Serverless Application
 
 Parameters:
   Environment:
@@ -531,7 +531,7 @@ Resources:
   HadsLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Sub "${AWS::StackName}-hads-layer"
+      LayerName: !Sub "${AWS::StackName}-wambda-layer"
       ContentUri: Layer/
       CompatibleRuntimes:
         - python3.12
@@ -570,7 +570,7 @@ sam deploy --config-env "$ENVIRONMENT"
 if [ -d "static" ] && [ "$(ls -A static)" ]; then
   echo "📁 Syncing static files..."
   BUCKET=$(aws cloudformation describe-stacks \
-    --stack-name "hads-${ENVIRONMENT}" \
+    --stack-name "wambda-${ENVIRONMENT}" \
     --query 'Stacks[0].Outputs[?OutputKey==`StaticBucket`].OutputValue' \
     --output text)
   aws s3 sync static/ "s3://${BUCKET}/static/" --delete
@@ -587,10 +587,10 @@ echo "✅ Deployment completed successfully!"
 .PHONY: dev test build deploy clean
 
 dev:
-	hads-admin.py proxy
+	wambda-admin.py proxy
 
 test:
-	hads-admin.py get
+	wambda-admin.py get
 
 build:
 	sam build
@@ -654,7 +654,7 @@ Error: Template file 'template.yaml' does not exist
 ls -la template.yaml
 
 # ファイル名を指定
-hads-admin.py get -t my-template.yaml
+wambda-admin.py get -t my-template.yaml
 
 # SAMテンプレート検証
 sam validate -t template.yaml
@@ -693,7 +693,7 @@ lsof -i :8000
 kill -9 <PID>
 
 # 別のポートを使用
-hads-admin.py proxy -p 9000
+wambda-admin.py proxy -p 9000
 ```
 
 ### デバッグのコツ
@@ -710,7 +710,7 @@ aws logs describe-log-groups
 aws logs describe-log-streams --log-group-name /aws/lambda/your-function
 
 # デバッグモードでテスト
-DEBUG=true hads-admin.py get -p /api/test
+DEBUG=true wambda-admin.py get -p /api/test
 ```
 
 ## 📋 ベストプラクティス
@@ -719,7 +719,7 @@ DEBUG=true hads-admin.py get -p /api/test
 
 ```yaml
 # .github/workflows/deploy.yml
-name: Deploy HADS App
+name: Deploy WAMBDA App
 
 on:
   push:
@@ -749,7 +749,7 @@ jobs:
           aws-region: ap-northeast-1
           
       - name: Test Lambda function
-        run: hads-admin.py get
+        run: wambda-admin.py get
           
       - name: Deploy
         run: |
@@ -761,7 +761,7 @@ jobs:
 
 ```bash
 # 環境変数で管理
-export HADS_ENVIRONMENT=production
+export WAMBDA_ENVIRONMENT=production
 export AWS_PROFILE=prod
 
 # samconfig.tomlで環境を分離

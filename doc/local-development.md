@@ -1,12 +1,12 @@
 # ローカル開発環境
 
-HADSは効率的なローカル開発環境を提供し、AWS環境をシミュレートしながら快適に開発できます。このページでは、ローカル開発環境の詳細な設定と使用方法を説明します。
+WAMBDAは効率的なローカル開発環境を提供し、AWS環境をシミュレートしながら快適に開発できます。このページでは、ローカル開発環境の詳細な設定と使用方法を説明します。
 
 ## 🏗️ ローカル開発の仕組み
 
 ### 3つのサーバー構成
 
-HADSのローカル開発環境は3つのサーバーで構成されています：
+WAMBDAのローカル開発環境は3つのサーバーで構成されています：
 
 ```
 ┌─────────────────────────────────┐
@@ -34,7 +34,7 @@ HADSのローカル開発環境は3つのサーバーで構成されています
 
 ```bash
 # プロキシサーバーを起動（他のサーバーも自動起動）
-hads-admin.py proxy
+wambda-admin.py proxy
 ```
 
 ### 個別起動
@@ -44,10 +44,10 @@ hads-admin.py proxy
 sam local start-api
 
 # ターミナル2: 静的ファイルサーバー
-hads-admin.py static
+wambda-admin.py static
 
 # ターミナル3: プロキシサーバー
-hads-admin.py proxy
+wambda-admin.py proxy
 ```
 
 ## ⚙️ CLIオプションによる詳細設定
@@ -56,10 +56,10 @@ hads-admin.py proxy
 
 ```bash
 # プロキシサーバーのカスタムポート設定
-hads-admin.py proxy -p 9000 -s 3001 --static-port 8081
+wambda-admin.py proxy -p 9000 -s 3001 --static-port 8081
 
 # 静的ファイルサーバーのカスタム設定
-hads-admin.py static -p 8090 -d assets --static-url /files
+wambda-admin.py static -p 8090 -d assets --static-url /files
 ```
 
 ### 環境変数による設定
@@ -83,11 +83,11 @@ export AWS_SAM_LOCAL=true
 version = 0.1
 
 [default.deploy.parameters]
-stack_name = "hads-dev"
+stack_name = "wambda-dev"
 region = "ap-northeast-1"
 
 [production.deploy.parameters]
-stack_name = "hads-prod"
+stack_name = "wambda-prod"
 region = "ap-northeast-1"
 profile = "production"
 ```
@@ -109,11 +109,11 @@ npm run watch  # package.jsonで設定
 ```bash
 # 環境変数で環境を切り替え
 export AWS_PROFILE=development
-hads-admin.py proxy
+wambda-admin.py proxy
 
 # 異なる環境での実行
 export AWS_PROFILE=staging
-hads-admin.py proxy -p 9000
+wambda-admin.py proxy -p 9000
 
 # samconfig.tomlで環境別デプロイ
 sam deploy --config-env development
@@ -126,15 +126,15 @@ sam deploy --config-env production
 
 ```bash
 # GETリクエストのテスト
-hads-admin.py get -p /
-hads-admin.py get -p /api/users
-hads-admin.py get -p /blog/my-post
+wambda-admin.py get -p /
+wambda-admin.py get -p /api/users
+wambda-admin.py get -p /blog/my-post
 
 # リクエストボディ付きPOSTテスト
-hads-admin.py get -p /api/users -m POST -b '{"name":"John"}'
+wambda-admin.py get -p /api/users -m POST -b '{"name":"John"}'
 
 # カスタムイベントファイルでテスト
-hads-admin.py get -e event.json
+wambda-admin.py get -e event.json
 ```
 
 ### テストイベントファイル
@@ -173,7 +173,7 @@ def test_index_view():
     response = lambda_handler(event, None)
     
     assert response["statusCode"] == 200
-    assert "HADSアプリ" in response["body"]
+    assert "WAMBDAアプリ" in response["body"]
 
 def test_api_endpoint():
     """APIエンドポイントのテスト"""
@@ -229,7 +229,7 @@ logging.basicConfig(
 
 ```python
 # Lambda/project/debug_views.py
-from hads.shortcuts import render, json_response
+from wambda.shortcuts import render, json_response
 
 def debug_info(master):
     """デバッグ情報表示"""
@@ -299,7 +299,7 @@ def custom_error_render(master, error_message):
 
 ## 🎭 Mock環境での開発
 
-HADSの組み込みMock機能を使用することで、実際のAWSサービスを使用せずに開発できます。
+WAMBDAの組み込みMock機能を使用することで、実際のAWSサービスを使用せずに開発できます。
 
 ### Mock機能の有効化
 
@@ -377,14 +377,14 @@ def set_data():
 
 ```bash
 # 1. Mock設定の確認
-hads-admin.py get -p /debug/config  # Mock設定状況確認
+wambda-admin.py get -p /debug/config  # Mock設定状況確認
 
 # 2. Mockデータを使った機能テスト
-hads-admin.py get -p /api/users      # DynamoDBモックデータ取得
-hads-admin.py get -p /config         # SSMモックパラメータ取得
+wambda-admin.py get -p /api/users      # DynamoDBモックデータ取得
+wambda-admin.py get -p /config         # SSMモックパラメータ取得
 
 # 3. プロキシサーバー起動（Mock環境）
-hads-admin.py proxy                  # ブラウザでhttp://localhost:8000
+wambda-admin.py proxy                  # ブラウザでhttp://localhost:8000
 
 # 4. 開発とテストのサイクル
 # コード変更 → getコマンドでテスト → ブラウザで確認
@@ -395,7 +395,7 @@ hads-admin.py proxy                  # ブラウザでhttp://localhost:8000
 Mock機能では詳細なログが出力されます：
 
 ```bash
-$ hads-admin.py get -p /api/users
+$ wambda-admin.py get -p /api/users
 Importing lambda_handler from /path/to/Lambda/lambda_function.py
 Executing lambda_handler...
 Setting up SSM mock data...
@@ -509,7 +509,7 @@ def get_users_table():
         {
             "label": "Start Local Server",
             "type": "shell",
-            "command": "hads-admin.py",
+            "command": "wambda-admin.py",
             "args": ["CLI オプション", "--local-server-run", "proxy"],
             "group": "build",
             "presentation": {
@@ -598,7 +598,7 @@ ls -la static/
 chmod -R 755 static/
 
 # プロキシサーバーの再起動
-hads-admin.py proxy
+wambda-admin.py proxy
 ```
 
 #### 3. Lambda関数のインポートエラー
@@ -665,7 +665,7 @@ echo "All checks passed. Committing..."
 .PHONY: dev test build deploy clean
 
 dev:
-	hads-admin.py proxy
+	wambda-admin.py proxy
 
 test:
 	python -m pytest tests/ -v
@@ -764,7 +764,7 @@ repos:
 
 ### 認証・Cookieの処理
 
-HADSの認証システムは複数のCookieを使用するため、プロキシサーバーでは特別な処理が必要です：
+WAMBDAの認証システムは複数のCookieを使用するため、プロキシサーバーでは特別な処理が必要です：
 
 #### 問題と解決策
 
@@ -804,7 +804,7 @@ for cookie_header in set_cookie_headers:
 
 ```bash
 # プロキシサーバー起動（詳細ログ付き）
-hads-admin.py proxy
+wambda-admin.py proxy
 
 # ログ例
 [PROXY] POST /accounts/login -> http://localhost:3000/accounts/login
@@ -820,24 +820,24 @@ Lambda関数を直接実行してテストできます（SAM Local不要）：
 ```bash
 # 基本的な使用方法
 cd Lambda
-PYTHONPATH=../hads/lib python3 lambda_function.py -p /
+PYTHONPATH=../wambda/lib python3 lambda_function.py -p /
 
 # POSTリクエストのテスト
-PYTHONPATH=../hads/lib python3 lambda_function.py \
+PYTHONPATH=../wambda/lib python3 lambda_function.py \
   -p /accounts/login \
   -m POST \
   -b "username=test&password=test" \
   -H "Content-Type: application/x-www-form-urlencoded"
 
 # JSONリクエストのテスト
-PYTHONPATH=../hads/lib python3 lambda_function.py \
+PYTHONPATH=../wambda/lib python3 lambda_function.py \
   -p /api/data \
   -m POST \
   -b '{"key":"value"}' \
   --json
 
 # クエリパラメータ付きリクエスト
-PYTHONPATH=../hads/lib python3 lambda_function.py \
+PYTHONPATH=../wambda/lib python3 lambda_function.py \
   -p /api/search \
   -q "query=python&limit=10"
 ```

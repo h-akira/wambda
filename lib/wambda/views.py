@@ -1,5 +1,5 @@
 """
-HADS Framework default views
+WAMBDA Framework default views
 """
 
 def url_not_matched_view(master):
@@ -7,7 +7,7 @@ def url_not_matched_view(master):
     デフォルトの404エラーページビュー
     URLパターンにマッチしない場合に呼び出される
     """
-    from hads.shortcuts import gen_response
+    from wambda.shortcuts import gen_response
     
     html_content = """
     <!DOCTYPE html>

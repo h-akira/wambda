@@ -1,15 +1,15 @@
 # 認証とCognito連携
 
-HADSはAmazon Cognitoとの深い連携を通じて、強力で安全な認証システムを提供します。このページでは、認証機能の実装方法を詳しく説明します。
+WAMBDAはAmazon Cognitoとの深い連携を通じて、強力で安全な認証システムを提供します。このページでは、認証機能の実装方法を詳しく説明します。
 
 ## 🔐 認証システムの概要
 
 ### 構成要素
 
-HADSの認証システムは以下で構成されています：
+WAMBDAの認証システムは以下で構成されています：
 
 - **Amazon Cognito User Pool**: ユーザー管理とトークン発行
-- **Cognito クラス**: HADS側の認証ハンドラー
+- **Cognito クラス**: WAMBDA側の認証ハンドラー
 - **ManagedAuthPage クラス**: 認証ページの管理
 - **認証デコレータ**: ビューへのアクセス制御
 
@@ -20,7 +20,7 @@ HADSの認証システムは以下で構成されています：
 2. Cognitoの認証画面にリダイレクト
 3. ユーザーが認証情報を入力
 4. Cognitoが認証コードを発行
-5. HADSがコードをトークンに交換
+5. WAMBDAがコードをトークンに交換
 6. トークンをクッキーに保存
 7. 以降のリクエストでトークンを検証
 ```
@@ -32,7 +32,7 @@ HADSの認証システムは以下で構成されています：
 ```bash
 # AWS CLIでUser Poolを作成
 aws cognito-idp create-user-pool \
-  --pool-name "hads-user-pool" \
+  --pool-name "wambda-user-pool" \
   --policies PasswordPolicy='{
     "MinimumLength": 8,
     "RequireUppercase": true,
@@ -54,7 +54,7 @@ USER_POOL_ID="ap-northeast-1_XXXXXXXXX"
 # App Clientを作成
 aws cognito-idp create-user-pool-client \
   --user-pool-id $USER_POOL_ID \
-  --client-name "hads-app-client" \
+  --client-name "wambda-app-client" \
   --generate-secret \
   --explicit-auth-flows ADMIN_NO_SRP_AUTH ALLOW_USER_PASSWORD_AUTH ALLOW_REFRESH_TOKEN_AUTH \
   --supported-identity-providers COGNITO \
@@ -75,7 +75,7 @@ aws cognito-idp create-user-pool-domain \
   --region ap-northeast-1
 ```
 
-## 🔧 HADS側の設定
+## 🔧 WAMBDA側の設定
 
 ### Systems Manager Parameter Store
 
@@ -119,7 +119,7 @@ aws ssm put-parameter \
 # Lambda/project/settings.py
 import os
 import boto3
-from hads.authenticate import Cognito, ManagedAuthPage
+from wambda.authenticate import Cognito, ManagedAuthPage
 
 # ... 他の設定 ...
 
@@ -152,7 +152,7 @@ AUTH_PAGE = ManagedAuthPage(
 # Lambda/lambda_function.py
 import sys
 import os
-from hads.handler import Master
+from wambda.handler import Master
 
 def lambda_handler(event, context):
     sys.path.append(os.path.dirname(__file__))
@@ -180,7 +180,7 @@ def lambda_handler(event, context):
             master.logger.warning("favicon.ico not found")
         else:
             master.logger.exception(e)
-        from hads.shortcuts import error_render
+        from wambda.shortcuts import error_render
         import traceback
         return error_render(master, traceback.format_exc())
 ```
@@ -189,7 +189,7 @@ def lambda_handler(event, context):
 
 ```python
 # Lambda/project/urls.py
-from hads.urls import Path
+from wambda.urls import Path
 from .views import index, profile, auth_callback, logout
 
 urlpatterns = [
@@ -204,7 +204,7 @@ urlpatterns = [
 
 ```python
 # Lambda/project/views.py
-from hads.shortcuts import render, redirect, login_required
+from wambda.shortcuts import render, redirect, login_required
 
 def index(master):
     """トップページ"""
@@ -269,7 +269,7 @@ def logout(master):
 <!-- templates/base.html -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="{{ reverse(master, 'index') }}">HADSアプリ</a>
+        <a class="navbar-brand" href="{{ reverse(master, 'index') }}">WAMBDAアプリ</a>
         
         <div class="navbar-nav ms-auto">
             {% if master.request.auth %}
@@ -387,7 +387,7 @@ def logout(master):
 ### デコレータによる認証制御
 
 ```python
-from hads.shortcuts import login_required
+from wambda.shortcuts import login_required
 
 @login_required
 def protected_view(master):

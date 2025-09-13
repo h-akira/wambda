@@ -1,13 +1,13 @@
 # プロジェクト構造
 
-このページでは、HADSプロジェクトの詳細な構造と各ファイルの役割について説明します。
+このページでは、WAMBDAプロジェクトの詳細な構造と各ファイルの役割について説明します。
 
 ## 📁 基本的なプロジェクト構造
 
-HADSプロジェクトは以下のような構造になっています：
+WAMBDAプロジェクトは以下のような構造になっています：
 
 ```
-my-hads-project/
+my-wambda-project/
 ├── samconfig.toml          # SAM CLI設定ファイル
 ├── template.yaml           # CloudFormationテンプレート
 ├── static/                 # 静的ファイル
@@ -37,7 +37,7 @@ AWS SAM CLIの設定ファイルです。
 version = 0.1
 
 [default.global.parameters]
-stack_name = "my-hads-stack"
+stack_name = "my-wambda-stack"
 
 [default.build.parameters]
 cached = true
@@ -52,12 +52,12 @@ region = "ap-northeast-1"
 
 ### template.yaml
 
-CloudFormationテンプレートです。HADSはAWS SAMを使用してインフラを定義します。
+CloudFormationテンプレートです。WAMBDAはAWS SAMを使用してインフラを定義します。
 
 ```yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: HADS Serverless Web Application
+Description: WAMBDA Serverless Web Application
 
 Globals:
   Function:
@@ -104,7 +104,7 @@ Lambda関数のメインエントリーポイントです。
 ```python
 import sys
 import os
-from hads.handler import Master
+from wambda.handler import Master
 
 def lambda_handler(event, context):
     """
@@ -120,7 +120,7 @@ def lambda_handler(event, context):
     # プロジェクトディレクトリをPythonパスに追加
     sys.path.append(os.path.dirname(__file__))
     
-    # HADSマスターオブジェクトを初期化
+    # WAMBDAマスターオブジェクトを初期化
     master = Master(event, context)
     master.logger.info(f"リクエストパス: {master.request.path}")
     
@@ -149,14 +149,14 @@ def lambda_handler(event, context):
             master.logger.exception(e)
             
         # エラーページを表示
-        from hads.shortcuts import error_render
+        from wambda.shortcuts import error_render
         import traceback
         return error_render(master, traceback.format_exc())
 ```
 
 ### project/settings.py
 
-HADSアプリケーションの設定ファイルです。
+WAMBDAアプリケーションの設定ファイルです。
 
 ```python
 import os
@@ -178,7 +178,7 @@ TIMEZONE = "Asia/Tokyo"
 ssm = boto3.client('ssm')
 
 # Cognito認証設定
-from hads.authenticate import Cognito, ManagedAuthPage
+from wambda.authenticate import Cognito, ManagedAuthPage
 
 COGNITO = Cognito(
     domain=ssm.get_parameter(Name="/YourProject/Cognito/domain")["Parameter"]["Value"],
@@ -200,7 +200,7 @@ AUTH_PAGE = ManagedAuthPage(
 URLルーティング設定ファイルです。
 
 ```python
-from hads.urls import Path, Router
+from wambda.urls import Path, Router
 from .views import index, detail, api_data
 
 # アプリケーション名（オプション）
@@ -227,13 +227,13 @@ urlpatterns = [
 ビュー関数を定義するファイルです。
 
 ```python
-from hads.shortcuts import render, redirect, json_response, login_required
+from wambda.shortcuts import render, redirect, json_response, login_required
 
 def index(master):
     """トップページ"""
     context = {
         "title": "ホーム",
-        "message": "HADSへようこそ!"
+        "message": "WAMBDAへようこそ!"
     }
     return render(master, "index.html", context)
 
@@ -259,7 +259,7 @@ def api_endpoint(master):
     """API エンドポイント"""
     data = {
         "status": "success",
-        "message": "HADSのAPIレスポンス",
+        "message": "WAMBDAのAPIレスポンス",
         "method": master.request.method
     }
     return json_response(master, data)
@@ -290,7 +290,7 @@ def form_handler(master):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ title | default('HADS App') }}{% endblock %}</title>
+    <title>{% block title %}{{ title | default('WAMBDA App') }}{% endblock %}</title>
     
     <!-- 静的ファイルの読み込み -->
     <link rel="stylesheet" href="{{ static(master, 'css/bootstrap.min.css') }}">
@@ -302,7 +302,7 @@ def form_handler(master):
     <!-- ナビゲーション -->
     <nav class="navbar">
         <div class="container">
-            <a href="{{ reverse(master, 'index') }}" class="navbar-brand">HADS App</a>
+            <a href="{{ reverse(master, 'index') }}" class="navbar-brand">WAMBDA App</a>
             
             {% if master.request.auth %}
                 <div class="navbar-nav">
@@ -326,7 +326,7 @@ def form_handler(master):
     <!-- フッター -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 HADS Application. All rights reserved.</p>
+            <p>&copy; 2024 WAMBDA Application. All rights reserved.</p>
         </div>
     </footer>
     
@@ -344,7 +344,7 @@ def form_handler(master):
 ```html
 {% extends "base.html" %}
 
-{% block title %}{{ title }} - HADS App{% endblock %}
+{% block title %}{{ title }} - WAMBDA App{% endblock %}
 
 {% block content %}
 <div class="hero">
@@ -372,7 +372,7 @@ def form_handler(master):
 
 {% block extra_js %}
 <script>
-console.log("HADSアプリケーションが読み込まれました");
+console.log("WAMBDAアプリケーションが読み込まれました");
 </script>
 {% endblock %}
 ```

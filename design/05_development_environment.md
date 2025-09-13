@@ -1,9 +1,9 @@
-# HADS フレームワーク 開発環境設計書
+# WAMBDA フレームワーク 開発環境設計書
 
 ## 1. 開発環境概要
 
 ### 1.1 開発環境構成
-HADSフレームワークは、SAM Local、統合プロキシサーバー、専用CLIツールによる、モダンなサーバーレス開発環境を提供します。
+WAMBDAフレームワークは、SAM Local、統合プロキシサーバー、専用CLIツールによる、モダンなサーバーレス開発環境を提供します。
 
 ### 1.2 開発環境の特徴
 - **コマンドライン中心**: 設定ファイル不要のCLIベース管理
@@ -30,7 +30,7 @@ graph TD
     H -->|Application<br/>Other paths| I[SAM Local<br/>Port 3000]
     
     I --> J[Lambda Function]
-    J --> K[HADS Framework]
+    J --> K[WAMBDA Framework]
     F --> L[Static Files]
     
     M[Environment Variables] --> N[Runtime Config]
@@ -168,7 +168,7 @@ export AWS_SAM_LOCAL=false
 
 ### 5.1 コマンドライン引数による設定
 
-HADSは設定ファイルに依存せず、すべてコマンドライン引数で設定を管理します：
+WAMBDAは設定ファイルに依存せず、すべてコマンドライン引数で設定を管理します：
 
 ```bash
 # プロキシサーバーのポート設定
@@ -241,7 +241,7 @@ def reverse(master, app_name, **kwargs):
 ### 6.1 新規プロジェクト作成
 
 ```bash
-# 1. HADSプロジェクトの初期化
+# 1. WAMBDAプロジェクトの初期化
 hads-admin.py init -n my-blog-app -t SSR001
 
 # 2. プロジェクトディレクトリに移動

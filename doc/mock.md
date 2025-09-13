@@ -1,10 +1,10 @@
 # Mock機能とテスト環境
 
-HADSフレームワークは、ローカル開発とテスト環境でAWSサービスをモック（模擬）する機能を提供しています。これにより、実際のAWSリソースを使用せずに開発・テストが可能です。
+WAMBDAフレームワークは、ローカル開発とテスト環境でAWSサービスをモック（模擬）する機能を提供しています。これにより、実際のAWSリソースを使用せずに開発・テストが可能です。
 
 ## 🎭 Mock機能の概要
 
-HADSのMock機能は以下の技術を使用しています：
+WAMBDAのMock機能は以下の技術を使用しています：
 
 - **moto**: AWSサービスのPythonモックライブラリ
 - **@mock_aws デコレータ**: motoのAWSサービスモック化
@@ -40,7 +40,7 @@ def use_mock(master):
     set_ssm_data()
     
     # 通常のビジネスロジックを実行
-    from hads.authenticate import set_auth_by_cookie, add_set_cookie_to_header
+    from wambda.authenticate import set_auth_by_cookie, add_set_cookie_to_header
     set_auth_by_cookie(master)
     view, kwargs = master.router.path2view(master.request.path)
     response = view(master, **kwargs)
@@ -249,20 +249,20 @@ NO_AUTH = True   # 認証をバイパス（開発時）
 
 ```bash
 # モック環境でのテスト
-hads-admin.py get -p /
+wambda-admin.py get -p /
 
 # 特定のAPIエンドポイントをテスト
-hads-admin.py get -p /api/users -m GET
+wambda-admin.py get -p /api/users -m GET
 
 # POSTリクエストのテスト
-hads-admin.py get -p /api/users -m POST -b '{"name":"テストユーザー"}'
+wambda-admin.py get -p /api/users -m POST -b '{"name":"テストユーザー"}'
 ```
 
 ### 3. ローカル開発サーバー
 
 ```bash
 # プロキシサーバー起動（モック環境）
-hads-admin.py proxy
+wambda-admin.py proxy
 ```
 
 ブラウザで `http://localhost:8000` にアクセスすると、モック環境でアプリケーションが動作します。
@@ -273,24 +273,24 @@ hads-admin.py proxy
 
 ```bash
 # ユーザー一覧取得
-hads-admin.py get -p /api/users
+wambda-admin.py get -p /api/users
 
 # 新規ユーザー作成
-hads-admin.py get -p /api/users -m POST -b '{
+wambda-admin.py get -p /api/users -m POST -b '{
   "name": "新規ユーザー",
   "email": "newuser@example.com"
 }'
 
 # ユーザー詳細取得
-hads-admin.py get -p /api/users/1
+wambda-admin.py get -p /api/users/1
 
 # ユーザー更新
-hads-admin.py get -p /api/users/1 -m PUT -b '{
+wambda-admin.py get -p /api/users/1 -m PUT -b '{
   "name": "更新されたユーザー"
 }'
 
 # ユーザー削除
-hads-admin.py get -p /api/users/1 -m DELETE
+wambda-admin.py get -p /api/users/1 -m DELETE
 ```
 
 ## ⚙️ 設定のカスタマイズ

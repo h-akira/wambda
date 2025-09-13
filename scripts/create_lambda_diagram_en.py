@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-HADS Lambda internal architecture diagram generation script (English version)
+WAMBDA Lambda internal architecture diagram generation script (English version)
 """
 
 import matplotlib.pyplot as plt
@@ -57,7 +57,7 @@ def create_arrow(ax, start, end, color='#666666', style='->', width=1.5):
     return arrow
 
 # Title
-ax.text(8, 11.5, 'HADS Lambda Function Internal Architecture', 
+ax.text(8, 11.5, 'WAMBDA Lambda Function Internal Architecture', 
         ha='center', va='center', fontsize=16, weight='bold')
 
 # API Gateway (input)
@@ -66,7 +66,7 @@ create_rounded_box(ax, 0.5, 9.5, 2, 1, 'API Gateway\nEvent', colors['lambda'])
 # Lambda Handler Entry Point
 create_rounded_box(ax, 4, 9.5, 2.5, 1, 'lambda_handler()\nEntry Point', colors['handler'])
 
-# HADS Framework Core Components
+# WAMBDA Framework Core Components
 # Master Class
 create_rounded_box(ax, 0.5, 7.5, 2.5, 1.2, 'Master Class\n- Initialize settings\n- Setup request/context', colors['hads_core'])
 

@@ -1,6 +1,6 @@
 # 静的ファイル管理
 
-HADSでは、CSS、JavaScript、画像などの静的ファイルをS3から効率的に配信する仕組みを提供しています。このページでは、静的ファイルの管理方法を詳しく説明します。
+WAMBDAでは、CSS、JavaScript、画像などの静的ファイルをS3から効率的に配信する仕組みを提供しています。このページでは、静的ファイルの管理方法を詳しく説明します。
 
 ## 📁 静的ファイルの構造
 
@@ -44,10 +44,10 @@ static/
 
 ```bash
 # 静的ファイルサーバーの設定
-hads-admin.py static --static-dir static --static-url /static -p 8080
+wambda-admin.py static --static-dir static --static-url /static -p 8080
 
 # プロキシサーバーでの静的ファイル統合
-hads-admin.py proxy --static-dir static --static-url /static
+wambda-admin.py proxy --static-dir static --static-url /static
 ```
 
 | 設定項目 | 説明 |
@@ -83,7 +83,7 @@ if not DEBUG:
 sam build && sam deploy static
 
 # プロキシサーバーを起動（推奨）
-hads-admin.py proxy
+wambda-admin.py proxy
 ```
 
 ### ローカル開発の仕組み
@@ -408,7 +408,7 @@ module.exports = {
 
 ```yaml
 # .github/workflows/deploy.yml
-name: Deploy HADS Application
+name: Deploy WAMBDA Application
 
 on:
   push:

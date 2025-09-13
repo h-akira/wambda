@@ -1,23 +1,23 @@
 # インストールと初期設定
 
-このページでは、HADSフレームワークをインストールして、開発環境を構築する手順を説明します。
+このページでは、WAMBDAフレームワークをインストールして、開発環境を構築する手順を説明します。
 
 ## 前提条件
 
-HADSを使用するために、以下のツールがインストールされている必要があります：
+WAMBDAを使用するために、以下のツールがインストールされている必要があります：
 
 ### 必須ツール
 
-- **Python 3.9以上** - HADSフレームワーク本体
+- **Python 3.9以上** - WAMBDAフレームワーク本体
 - **AWS CLI** - AWSリソースの管理
 - **Git** - ソースコード管理
 
 ### 用途別ツール
 
 - **AWS SAM CLI** - ローカル開発サーバー（proxy）とAWSデプロイ用
-  - `hads-admin.py proxy` 使用時に必要
+  - `wambda-admin.py proxy` 使用時に必要
   - AWS環境へのデプロイ時に必要
-  - **注意**: `hads-admin.py get` によるテストでは不要
+  - **注意**: `wambda-admin.py get` によるテストでは不要
 
 ### 推奨ツール
 
@@ -54,11 +54,11 @@ brew install aws-sam-cli
 pip install aws-sam-cli
 ```
 
-### 3. HADSフレームワークのインストール
+### 3. WAMBDAフレームワークのインストール
 
 #### PyPI登録について
 
-HADSは名前の重複により、PyPIへの登録が困難な状況です。以下の選択肢を検討中：
+WAMBDAは名前の重複により、PyPIへの登録が困難な状況です。以下の選択肢を検討中：
 
 - **現状維持**: GitHubリポジトリからの直接インストール
 - **名前変更**: 新しい名前でPyPIに登録（将来的な選択肢）
@@ -69,8 +69,8 @@ GitHubリポジトリから直接インストール：
 
 ```bash
 # リポジトリのクローン
-git clone https://github.com/h-akira/hads.git
-cd hads
+git clone https://github.com/h-akira/wambda.git
+cd wambda
 
 # 開発モードでインストール
 pip install -e .
@@ -84,11 +84,11 @@ pip install .
 インストール後、以下のコマンドが利用可能になります：
 
 ```bash
-# HADSプロジェクト管理ツール
-hads-admin.py --help
+# WAMBDAプロジェクト管理ツール
+wambda-admin.py --help
 
 # または相対パスから直接実行
-python bin/hads-admin.py --help
+python bin/wambda-admin.py --help
 ```
 
 ## AWS認証設定
@@ -120,7 +120,7 @@ aws configure --profile prod
 ### 1. プロジェクトの初期化
 
 ```bash
-hads-admin.py --init
+wambda-admin.py --init
 ```
 
 対話的にプロジェクト設定を入力：
@@ -180,10 +180,10 @@ sam build && sam deploy sam
 
 ```bash
 # Lambda関数の直接テスト（SAM CLI不要）
-hads-admin.py get
+wambda-admin.py get
 
 # 特定パスのテスト
-hads-admin.py get -p /api/test
+wambda-admin.py get -p /api/test
 ```
 
 ## 静的ファイルの設定
@@ -263,7 +263,7 @@ python -m venv venv
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate     # Windows
 
-# HADSのインストール
+# WAMBDAのインストール
 pip install -e .
 ```
 

@@ -1,6 +1,6 @@
 # クイックスタート
 
-このページでは、HADSを使って簡単なWebアプリケーションを作成し、ローカル環境での動作確認からAWSへのデプロイまでを実践します。
+このページでは、WAMBDAを使って簡単なWebアプリケーションを作成し、ローカル環境での動作確認からAWSへのデプロイまでを実践します。
 
 ## 🎯 作成するアプリケーション
 
@@ -14,7 +14,7 @@
 ### 1. プロジェクト初期化
 
 ```bash
-hads-admin.py --init
+wambda-admin.py --init
 ```
 
 以下のように入力：
@@ -36,7 +36,7 @@ cd todo-app
 ### Lambda/project/urls.py の編集
 
 ```python
-from hads.urls import Path
+from wambda.urls import Path
 from .views import index, add_todo, toggle_todo
 
 urlpatterns = [
@@ -51,11 +51,11 @@ urlpatterns = [
 ### Lambda/project/views.py の作成
 
 ```python
-from hads.shortcuts import render, redirect, json_response
+from wambda.shortcuts import render, redirect, json_response
 
 # 簡単なインメモリストレージ（本番では外部DBを使用）
 todos = [
-    {"id": 1, "text": "HADSを学習する", "completed": False},
+    {"id": 1, "text": "WAMBDAを学習する", "completed": False},
     {"id": 2, "text": "Todoアプリを作る", "completed": True},
 ]
 next_id = 3
@@ -129,7 +129,7 @@ def toggle_todo(master, todo_id):
         </main>
         
         <footer>
-            <p>Powered by HADS</p>
+            <p>Powered by WAMBDA</p>
         </footer>
     </div>
     <script src="{{ static(master, 'js/app.js') }}"></script>
@@ -493,10 +493,10 @@ document.addEventListener('DOMContentLoaded', function() {
 sam local start-api --port 3000
 
 # 統合プロキシサーバーを起動（推奨）
-hads-admin.py proxy
+wambda-admin.py proxy
 
 # または個別にサーバーを起動する場合:
-# hads-admin.py static    # 静的ファイルサーバーのみ
+# wambda-admin.py static    # 静的ファイルサーバーのみ
 ```
 
 ### 2. ブラウザでアクセス
@@ -507,10 +507,10 @@ hads-admin.py proxy
 
 ```bash
 # トップページのテスト
-hads-admin.py get
+wambda-admin.py get
 
 # 特定パスのテスト
-hads-admin.py get -p /add
+wambda-admin.py get -p /add
 ```
 
 ## ☁️ AWSへのデプロイ
@@ -560,11 +560,11 @@ aws s3 sync static/ s3://your-todo-app-static/static/
 
 ## 🎉 完成！
 
-これでHADSを使った最初のWebアプリケーションが完成しました！
+これでWAMBDAを使った最初のWebアプリケーションが完成しました！
 
 ### 学習した内容
 
-- ✅ HADSプロジェクトの初期化
+- ✅ WAMBDAプロジェクトの初期化
 - ✅ URLルーティングの設定
 - ✅ ビュー関数の実装
 - ✅ Jinja2テンプレートの作成

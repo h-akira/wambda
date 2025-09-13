@@ -1,8 +1,8 @@
-# HADS
+# WAMBDA
 
 ## Overview
 
-HADS (h-akira AWS Develop with Serverless) is a Python framework for developing serverless web applications on AWS. While developed as a successor to [HAD](https://github.com/h-akira/had), the architectural philosophy is significantly different, and in some cases, continuing with HAD may be recommended depending on the use case.
+WAMBDA (h-akira AWS Develop with Serverless) is a Python framework for developing serverless web applications on AWS. While developed as a successor to [HAD](https://github.com/h-akira/had), the architectural philosophy is significantly different, and in some cases, continuing with HAD may be recommended depending on the use case.
 
 ## Design Philosophy
 
@@ -16,7 +16,7 @@ HADS (h-akira AWS Develop with Serverless) is a Python framework for developing 
 
 ### System Configuration
 
-AWS system configuration diagram built with HADS:
+AWS system configuration diagram built with WAMBDA:
 
 ![structure](images/structure.png)
 
@@ -60,7 +60,7 @@ Comprehensive documentation is available in the [doc](./doc/README.md) directory
 
 ## 🚀 Quick Start
 
-Basic development workflow with HADS:
+Basic development workflow with WAMBDA:
 
 ### 1. Project Initialization
 ```bash
@@ -113,7 +113,7 @@ For detailed usage, please refer to the [documentation](./doc/README.md).
 
 ## 📁 Sample Projects
 
-Sample projects using HADS:
+Sample projects using WAMBDA:
 
 ### Latest Version (Recommended)
 - **[HadsSampleProject2](../HadsSampleProject2/)** - Latest sample with authentication, form handling, and mock functionality
@@ -130,7 +130,7 @@ Sample projects using HADS:
 
 ### hads-admin.py Commands
 
-HADS management tools provide a simple and intuitive command-line interface. Everything is controlled by command-line options without depending on configuration files.
+WAMBDA management tools provide a simple and intuitive command-line interface. Everything is controlled by command-line options without depending on configuration files.
 
 #### init - Project Initialization
 ```bash

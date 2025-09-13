@@ -12,7 +12,7 @@ def login_required(func):
     """
     def wrapper(master, **kwargs):
         if not master.request.auth:
-            from hads.authenticate import get_login_url
+            from wambda.authenticate import get_login_url
             response = {
                 'statusCode': 302,
                 'headers': {
@@ -221,7 +221,7 @@ def _register_template_globals(jinja_env):
     jinja_env.globals['reverse'] = reverse
     
     # 認証関連の関数はauthenticate.pyから直接インポート
-    from hads.authenticate import get_login_url, get_signup_url, get_verify_url, get_logout_url
+    from wambda.authenticate import get_login_url, get_signup_url, get_verify_url, get_logout_url
     jinja_env.globals['get_login_url'] = get_login_url
     jinja_env.globals['get_signup_url'] = get_signup_url
     jinja_env.globals['get_verify_url'] = get_verify_url

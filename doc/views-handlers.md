@@ -1,6 +1,6 @@
 # ビューとハンドラー
 
-HADSのビューシステムは、Djangoライクなアプローチを採用しており、リクエストを受け取ってレスポンスを返すシンプルな関数として実装されています。このページでは、ビュー関数の詳細な実装方法を説明します。
+WAMBDAのビューシステムは、Djangoライクなアプローチを採用しており、リクエストを受け取ってレスポンスを返すシンプルな関数として実装されています。このページでは、ビュー関数の詳細な実装方法を説明します。
 
 ## 🎯 ビュー関数の基本
 
@@ -12,14 +12,14 @@ def my_view(master, **kwargs):
     ビュー関数の基本構造
     
     Args:
-        master: HADSのMasterオブジェクト（リクエスト情報やログ機能を含む）
+        master: WAMBDAのMasterオブジェクト（リクエスト情報やログ機能を含む）
         **kwargs: URLパラメータから渡される引数
         
     Returns:
         HTTPレスポンス辞書
     """
     # ビジネスロジック
-    context = {"message": "Hello, HADS!"}
+    context = {"message": "Hello, WAMBDA!"}
     
     # レスポンスを返す
     return render(master, "template.html", context)
@@ -52,13 +52,13 @@ def my_view(master):
 ### シンプルなページ表示
 
 ```python
-from hads.shortcuts import render
+from wambda.shortcuts import render
 
 def index(master):
     """トップページ"""
     context = {
         "title": "ホーム",
-        "message": "HADSアプリケーションへようこそ",
+        "message": "WAMBDAアプリケーションへようこそ",
         "items": ["項目1", "項目2", "項目3"]
     }
     return render(master, "index.html", context)
@@ -94,7 +94,7 @@ def user_profile(master, user_id):
 ### フォーム処理
 
 ```python
-from hads.shortcuts import render, redirect
+from wambda.shortcuts import render, redirect
 
 def contact_form(master):
     """お問い合わせフォーム"""
@@ -149,7 +149,7 @@ def contact_success(master):
 ### HTML レスポンス
 
 ```python
-from hads.shortcuts import render
+from wambda.shortcuts import render
 
 def html_response(master):
     context = {"data": "value"}
@@ -159,7 +159,7 @@ def html_response(master):
 ### JSON レスポンス
 
 ```python
-from hads.shortcuts import json_response
+from wambda.shortcuts import json_response
 
 def api_data(master):
     data = {
@@ -184,7 +184,7 @@ def api_error(master):
 ### リダイレクト
 
 ```python
-from hads.shortcuts import redirect
+from wambda.shortcuts import redirect
 
 def redirect_view(master):
     # 名前付きURLへのリダイレクト
@@ -198,7 +198,7 @@ def redirect_with_params(master):
 ### カスタムレスポンス
 
 ```python
-from hads.shortcuts import gen_response
+from wambda.shortcuts import gen_response
 
 def csv_download(master):
     csv_data = "name,email\nJohn,john@example.com\nJane,jane@example.com"
@@ -231,7 +231,7 @@ def file_download(master):
 ### ログイン必須デコレータ
 
 ```python
-from hads.shortcuts import login_required
+from wambda.shortcuts import login_required
 
 @login_required
 def protected_view(master):
@@ -275,7 +275,7 @@ def admin_dashboard(master):
 ### RESTful API
 
 ```python
-from hads.shortcuts import json_response
+from wambda.shortcuts import json_response
 
 def users_api(master):
     """ユーザー一覧API"""
@@ -556,14 +556,14 @@ def important_operation(master):
 
 ## 🛠️ ショートカット関数
 
-HADSでは、よく使用される機能を簡単に呼び出せるショートカット関数を提供しています。
+WAMBDAでは、よく使用される機能を簡単に呼び出せるショートカット関数を提供しています。
 
-> **注意**: ライブラリのバージョンによっては、`hads.shortcuts`ではなく`hads.shourtcuts`（typo）でインポートする必要がある場合があります。エラーが発生する場合は両方試してみてください。
+> **注意**: ライブラリのバージョンによっては、`wambda.shortcuts`ではなく`wambda.shourtcuts`（typo）でインポートする必要がある場合があります。エラーが発生する場合は両方試してみてください。
 
 ```python
 # 正しいインポート（推奨）
-from hads.shortcuts import render, redirect, json_response, login_required
+from wambda.shortcuts import render, redirect, json_response, login_required
 
 # typoがある場合（一部のバージョン）
-# from hads.shourtcuts import render, redirect, json_response, login_required
+# from wambda.shourtcuts import render, redirect, json_response, login_required
 ```

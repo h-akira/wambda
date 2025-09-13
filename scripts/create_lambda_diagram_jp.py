@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-HADS Lambda内部構造図を生成するスクリプト（日本語版）
+WAMBDA Lambda内部構造図を生成するスクリプト（日本語版）
 """
 
 import matplotlib.pyplot as plt
@@ -57,7 +57,7 @@ def create_arrow(ax, start, end, color='#666666', style='->', width=1.5):
     return arrow
 
 # タイトル
-ax.text(8, 11.5, 'HADS Lambda関数 内部アーキテクチャ', 
+ax.text(8, 11.5, 'WAMBDA Lambda関数 内部アーキテクチャ', 
         ha='center', va='center', fontsize=16, weight='bold')
 
 # API Gateway (入力)
@@ -66,7 +66,7 @@ create_rounded_box(ax, 0.5, 9.5, 2, 1, 'API Gateway\nイベント', colors['lamb
 # Lambda Handler Entry Point
 create_rounded_box(ax, 4, 9.5, 2.5, 1, 'lambda_handler()\nエントリーポイント', colors['handler'])
 
-# HADS Framework Core Components
+# WAMBDA Framework Core Components
 # Master Class
 create_rounded_box(ax, 0.5, 7.5, 2.5, 1.2, 'Masterクラス\n- 設定初期化\n- リクエスト/コンテキスト設定', colors['hads_core'])
 

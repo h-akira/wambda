@@ -16,7 +16,7 @@ class Master:
         event: AWS Lambdaイベントオブジェクト
         context: AWS Lambdaコンテキストオブジェクト
     """
-    from hads.urls import Router
+    from wambda.urls import Router
     self.event = event
     self.context = context
     self.settings = importlib.import_module('project.settings') 
@@ -82,7 +82,7 @@ class Master:
     Returns:
         (view, kwargs)のタプル
     """
-    from hads.urls import NotMatched
+    from wambda.urls import NotMatched
     try:
       return self.router.path2view(path)
     except NotMatched:
@@ -91,7 +91,7 @@ class Master:
         return self.settings.URL_NOT_MATCHED_VIEW, {}
       else:
         # デフォルトビューを使用
-        from hads.views import url_not_matched_view
+        from wambda.views import url_not_matched_view
         return url_not_matched_view, {}
 
 class MultiDict:

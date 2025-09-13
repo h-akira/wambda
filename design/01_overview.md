@@ -1,9 +1,9 @@
-# HADS フレームワーク 基本設計書
+# WAMBDA フレームワーク 基本設計書
 
 ## 1. 概要
 
 ### 1.1 フレームワークの目的
-HADSは、AWS Lambda上で動作するモダンなWebアプリケーションフレームワークです。以下の特徴を持ちます：
+WAMBDAは、AWS Lambda上で動作するモダンなWebアプリケーションフレームワークです。以下の特徴を持ちます：
 
 - **サーバーレス**: AWS Lambdaで動作し、インフラストラクチャの管理が不要
 - **統合CLI**: hads-admin.py によるプロジェクト管理とローカル開発
@@ -20,7 +20,7 @@ graph TD
     B --> D[Project Management]
     
     E[API Gateway] --> F[Lambda Function] 
-    F --> G[HADS Framework]
+    F --> G[WAMBDA Framework]
     G --> H[Router]
     H --> I[Views]
     I --> J[Templates]

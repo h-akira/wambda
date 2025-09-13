@@ -1,6 +1,6 @@
-# HADS ドキュメント
+# WAMBDA ドキュメント
 
-HADS (h-akira AWS Develop with Serverless) は、AWS Lambda上で動作するサーバレスWebアプリケーションフレームワークです。
+WAMBDA (h-akira AWS Develop with Serverless) は、AWS Lambda上で動作するサーバレスWebアプリケーションフレームワークです。
 
 ## 📚 ドキュメント目次
 
@@ -34,7 +34,7 @@ HADS (h-akira AWS Develop with Serverless) は、AWS Lambda上で動作するサ
 
 ## 🤝 貢献
 
-HADSフレームワークの改善にご協力いただける場合は、[GitHubリポジトリ](https://github.com/h-akira/hads)をご確認ください。
+WAMBDAフレームワークの改善にご協力いただける場合は、[GitHubリポジトリ](https://github.com/h-akira/wambda)をご確認ください。
 
 ## 📝 ライセンス
 
@@ -42,4 +42,4 @@ HADSフレームワークの改善にご協力いただける場合は、[GitHub
 
 ---
 
-> **注意**: HADSはAWS SAMを基盤とし、単一のLambda関数でWebアプリケーション全体を動作させるアーキテクチャを採用しています。従来のサーバーベースのフレームワークとは設計思想が異なりますので、使用前に[概要とフィロソフィー](./overview.md)をお読みください。
+> **注意**: WAMBDAはAWS SAMを基盤とし、単一のLambda関数でWebアプリケーション全体を動作させるアーキテクチャを採用しています。従来のサーバーベースのフレームワークとは設計思想が異なりますので、使用前に[概要とフィロソフィー](./overview.md)をお読みください。
