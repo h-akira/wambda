@@ -6,7 +6,7 @@ def requirements_from_file(file_name):
   return open(file_name).read().splitlines()
 
 setup(
-  name='hads',
+  name='wambda',
   version='1.1.1',
   package_dir={"":"lib"},
   packages=find_packages(where="lib"),
