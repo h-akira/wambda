@@ -72,6 +72,28 @@ class Master:
     else:
       raise ValueError("USE_MOCKは'true'または'false'である必要があります")
 
+  def get_view(self, path):
+    """
+    パスからビュー関数を取得し、NotMatchedエラーをハンドル
+    
+    Args:
+        path: リクエストパス
+        
+    Returns:
+        (view, kwargs)のタプル
+    """
+    from hads.urls import NotMatched
+    try:
+      return self.router.path2view(path)
+    except NotMatched:
+      # settings.pyでカスタム404ビューが定義されているかチェック
+      if hasattr(self.settings, 'URL_NOT_MATCHED_VIEW'):
+        return self.settings.URL_NOT_MATCHED_VIEW, {}
+      else:
+        # デフォルトビューを使用
+        from hads.views import url_not_matched_view
+        return url_not_matched_view, {}
+
 class MultiDict:
     """WTFormsと互換性のあるシンプルなMultiDictクラス"""
     def __init__(self, data=None):

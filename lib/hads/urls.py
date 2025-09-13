@@ -159,7 +159,7 @@ class Router:
                 if remaining_segments is not None:
                     return pattern.path2view(segments=remaining_segments, kwargs=kwargs)
         
-        raise NotMatched(f"パス '{'/'.join(segments) if segments else '/'}' に一致するビューが見つかりません")
+        raise NotMatched("パスに一致するビューが見つかりません")
     
     def _try_router_match(self, url_segments, router):
         """ルーターのルートパターンがURLセグメントにマッチするかチェック"""
@@ -257,4 +257,5 @@ class Router:
         path = "/".join(result_segments)
         
         return path, unused_params
+    
 
