@@ -2,7 +2,7 @@
 
 ## Overview
 
-WAMBDA (h-akira AWS Develop with Serverless) is a Python framework for developing serverless web applications on AWS. While developed as a successor to [HAD](https://github.com/h-akira/had), the architectural philosophy is significantly different, and in some cases, continuing with HAD may be recommended depending on the use case.
+WAMBDA is a Python framework for developing serverless web applications on AWS Lambda. While developed as a successor to [HAD](https://github.com/h-akira/had), the architectural philosophy is significantly different, and in some cases, continuing with HAD may be recommended depending on the use case.
 
 ## Design Philosophy
 

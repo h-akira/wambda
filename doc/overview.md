@@ -2,7 +2,7 @@
 
 ## WAMBDAとは
 
-WAMBDA (h-akira AWS Develop with Serverless) は、AWS Lambda上で動作するサーバレスWebアプリケーションフレームワークです。DjangoライクなAPIを提供しながら、サーバレスアーキテクチャの利点を最大限に活用できるよう設計されています。
+WAMBDA は、AWS Lambda上で動作するサーバレスWebアプリケーションフレームワークです。DjangoライクなAPIを提供しながら、サーバレスアーキテクチャの利点を最大限に活用できるよう設計されています。
 
 ## フィロソフィー
 
