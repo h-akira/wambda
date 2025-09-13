@@ -65,10 +65,10 @@ Basic development workflow with WAMBDA:
 ### 1. Project Initialization
 ```bash
 # Interactive template selection
-hads-admin.py init -n my-project
+wambda-admin.py init -n my-project
 
 # Create with specified template
-hads-admin.py init -n my-project -t SSR001
+wambda-admin.py init -n my-project -t SSR001
 ```
 
 Available templates:
@@ -80,23 +80,23 @@ Available templates:
 cd my-project
 
 # Start proxy server (recommended: integrates SAM Local + static file server)
-hads-admin.py proxy
+wambda-admin.py proxy
 
 # Start servers individually
-hads-admin.py static          # Static file server (port 8080)
+wambda-admin.py static          # Static file server (port 8080)
 sam local start-api           # SAM Local API server (port 3000)
 ```
 
 ### 3. Testing
 ```bash
 # Test GET request
-hads-admin.py get
+wambda-admin.py get
 
 # Test specific path and method
-hads-admin.py get -p /api/users -m POST
+wambda-admin.py get -p /api/users -m POST
 
 # Use custom event file
-hads-admin.py get -e custom-event.json
+wambda-admin.py get -e custom-event.json
 ```
 
 ### 4. Deploy to AWS
@@ -128,13 +128,13 @@ Sample projects using WAMBDA:
 
 ## 🛠️ CLI Tool Details
 
-### hads-admin.py Commands
+### wambda-admin.py Commands
 
 WAMBDA management tools provide a simple and intuitive command-line interface. Everything is controlled by command-line options without depending on configuration files.
 
 #### init - Project Initialization
 ```bash
-hads-admin.py init -n <project-name> [-t <template>]
+wambda-admin.py init -n <project-name> [-t <template>]
 
 # Options:
 # -n, --name      : Project name (required)
@@ -143,7 +143,7 @@ hads-admin.py init -n <project-name> [-t <template>]
 
 #### proxy - Start Proxy Server
 ```bash
-hads-admin.py proxy [options]
+wambda-admin.py proxy [options]
 
 # Options:
 # -p, --proxy-port  : Proxy server port (default: 8000)
@@ -155,7 +155,7 @@ hads-admin.py proxy [options]
 
 #### static - Start Static File Server
 ```bash
-hads-admin.py static [options]
+wambda-admin.py static [options]
 
 # Options:
 # -p, --port        : Server port (default: 8080)
@@ -165,7 +165,7 @@ hads-admin.py static [options]
 
 #### get - Lambda Function Testing
 ```bash
-hads-admin.py get [options]
+wambda-admin.py get [options]
 
 # Options:
 # -p, --path         : Path to test (default: /)
