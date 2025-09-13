@@ -67,7 +67,6 @@ def url_not_matched_view(master):
                 お探しのページが見つかりませんでした。<br>
                 URLが正しいかご確認ください。
             </div>
-            <a href="/" class="back-link">ホームに戻る</a>
         </div>
     </body>
     </html>
