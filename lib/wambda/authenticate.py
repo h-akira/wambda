@@ -391,6 +391,126 @@ def change_password(master, previous_password, new_password):
         master.logger.exception(f"パスワード変更エラー: {e}")
         return False
 
+def forgot_password(master, username):
+    """
+    パスワードリセット（忘れた場合）- 確認コードをメールで送信
+    
+    Args:
+        master: Masterインスタンス
+        username: ユーザー名
+        
+    Returns:
+        bool: 送信成功の場合True
+    """
+    # NO_AUTHモードの場合、常に成功
+    if getattr(master.settings, 'NO_AUTH', False):
+        master.logger.debug(f"NO_AUTHモード: ユーザー {username} のパスワードリセット確認コード送信をスキップ")
+        return True
+    
+    import boto3
+    from botocore.exceptions import ClientError
+    
+    client = boto3.client('cognito-idp', region_name=master.settings.REGION)
+    
+    try:
+        # パスワードリセット確認コード送信パラメータ
+        forgot_params = {
+            'Username': username
+        }
+        
+        # Cognito設定を取得
+        cognito_settings = get_cognito_settings(master)
+        
+        # CLIENT_SECRETが設定されている場合はSECRET_HASHを追加
+        if cognito_settings.get('CLIENT_SECRET'):
+            forgot_params['SecretHash'] = _calculate_secret_hash(master, username)
+        
+        response = client.forgot_password(
+            ClientId=cognito_settings['CLIENT_ID'],
+            **forgot_params
+        )
+        
+        master.logger.info(f"パスワードリセット確認コード送信成功: ユーザー {username}")
+        return True
+        
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        if error_code == 'UserNotFoundException':
+            master.logger.error(f"ユーザーが存在しません: {username}")
+        elif error_code == 'InvalidParameterException':
+            master.logger.error("無効なパラメータです")
+        elif error_code == 'LimitExceededException':
+            master.logger.error("パスワードリセットの試行回数が制限を超えました")
+        else:
+            master.logger.error(f"パスワードリセット確認コード送信エラー: {error_code}")
+        
+        master.logger.exception(f"パスワードリセット確認コード送信エラー: {e}")
+        return False
+
+def confirm_forgot_password(master, username, confirmation_code, new_password):
+    """
+    パスワードリセット確認 - 確認コードを使って新しいパスワードを設定
+    
+    Args:
+        master: Masterインスタンス
+        username: ユーザー名
+        confirmation_code: 確認コード
+        new_password: 新しいパスワード
+        
+    Returns:
+        bool: パスワード設定成功の場合True
+    """
+    # NO_AUTHモードの場合、常に成功
+    if getattr(master.settings, 'NO_AUTH', False):
+        master.logger.debug(f"NO_AUTHモード: ユーザー {username} のパスワードリセット確認をスキップ")
+        return True
+    
+    import boto3
+    from botocore.exceptions import ClientError
+    
+    client = boto3.client('cognito-idp', region_name=master.settings.REGION)
+    
+    try:
+        # パスワードリセット確認パラメータ
+        confirm_params = {
+            'Username': username,
+            'ConfirmationCode': confirmation_code,
+            'Password': new_password
+        }
+        
+        # Cognito設定を取得
+        cognito_settings = get_cognito_settings(master)
+        
+        # CLIENT_SECRETが設定されている場合はSECRET_HASHを追加
+        if cognito_settings.get('CLIENT_SECRET'):
+            confirm_params['SecretHash'] = _calculate_secret_hash(master, username)
+        
+        response = client.confirm_forgot_password(
+            ClientId=cognito_settings['CLIENT_ID'],
+            **confirm_params
+        )
+        
+        master.logger.info(f"パスワードリセット確認成功: ユーザー {username}")
+        return True
+        
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        if error_code == 'UserNotFoundException':
+            master.logger.error(f"ユーザーが存在しません: {username}")
+        elif error_code == 'CodeMismatchException':
+            master.logger.error("確認コードが正しくありません")
+        elif error_code == 'ExpiredCodeException':
+            master.logger.error("確認コードの有効期限が切れています")
+        elif error_code == 'InvalidPasswordException':
+            master.logger.error("新しいパスワードがパスワードポリシーに適合しません")
+        elif error_code == 'LimitExceededException':
+            master.logger.error("パスワードリセットの試行回数が制限を超えました")
+        else:
+            master.logger.error(f"パスワードリセット確認エラー: {error_code}")
+        
+        master.logger.exception(f"パスワードリセット確認エラー: {e}")
+        return False
+
 def sign_out(master):
     """
     ユーザーをサインアウト
