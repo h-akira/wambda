@@ -333,6 +333,64 @@ def add_set_cookie_to_header(master, response):
     
     return response
 
+def change_password(master, previous_password, new_password):
+    """
+    パスワード変更
+    
+    Args:
+        master: Masterインスタンス
+        previous_password: 現在のパスワード（NO_AUTHモードでは不要）
+        new_password: 新しいパスワード
+        
+    Returns:
+        bool: パスワード変更成功の場合True
+        
+    Raises:
+        Exception: 未認証の場合
+    """
+    if not master.request.auth:
+        raise Exception("認証されていません")
+    
+    # NO_AUTHモードの場合、常に成功
+    if getattr(master.settings, 'NO_AUTH', False):
+        master.logger.debug(f"NO_AUTHモード: ユーザー {master.request.username} のパスワード変更をスキップ")
+        return True
+    
+    import boto3
+    from botocore.exceptions import ClientError
+    
+    client = boto3.client('cognito-idp', region_name=master.settings.REGION)
+    
+    try:
+        # パスワード変更パラメータ
+        change_params = {
+            'AccessToken': master.request.access_token,
+            'ProposedPassword': new_password
+        }
+        
+        # 現在のパスワードが提供されている場合は追加
+        if previous_password:
+            change_params['PreviousPassword'] = previous_password
+        
+        response = client.change_password(**change_params)
+        
+        master.logger.info(f"パスワード変更成功: ユーザー {master.request.username}")
+        return True
+        
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        if error_code == 'NotAuthorizedException':
+            master.logger.error("認証エラー: 現在のパスワードが正しくないか、アクセストークンが無効です")
+        elif error_code == 'InvalidPasswordException':
+            master.logger.error("新しいパスワードがパスワードポリシーに適合しません")
+        elif error_code == 'LimitExceededException':
+            master.logger.error("パスワード変更の試行回数が制限を超えました")
+        else:
+            master.logger.error(f"パスワード変更エラー: {error_code}")
+        
+        master.logger.exception(f"パスワード変更エラー: {e}")
+        return False
+
 def sign_out(master):
     """
     ユーザーをサインアウト
