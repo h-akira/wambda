@@ -95,40 +95,40 @@ class Master:
         return url_not_matched_view, {}
 
 class MultiDict:
-    """WTFormsと互換性のあるシンプルなMultiDictクラス"""
-    def __init__(self, data=None):
-        self._data = {}
-        if data:
-            for key, value_list in data.items():
-                self._data[key] = value_list
-    
-    def getlist(self, key):
-        """指定されたキーの値をリストで取得"""
-        return self._data.get(key, [])
-    
-    def get(self, key, default=None):
-        """指定されたキーの最初の値を取得"""
-        values = self.getlist(key)
-        return values[0] if values else default
-    
-    def __getitem__(self, key):
-        """指定されたキーの最初の値を取得"""
-        values = self.getlist(key)
-        if not values:
-            raise KeyError(key)
-        return values[0]
-    
-    def __contains__(self, key):
-        """キーが存在するかチェック"""
-        return key in self._data
-    
-    def keys(self):
-        """すべてのキーを取得"""
-        return self._data.keys()
-    
-    def items(self):
-        """すべてのアイテムを取得（最初の値のみ）"""
-        return [(key, self.get(key)) for key in self._data.keys()]
+  """WTFormsと互換性のあるシンプルなMultiDictクラス"""
+  def __init__(self, data=None):
+    self._data = {}
+    if data:
+      for key, value_list in data.items():
+        self._data[key] = value_list
+
+  def getlist(self, key):
+    """指定されたキーの値をリストで取得"""
+    return self._data.get(key, [])
+
+  def get(self, key, default=None):
+    """指定されたキーの最初の値を取得"""
+    values = self.getlist(key)
+    return values[0] if values else default
+
+  def __getitem__(self, key):
+    """指定されたキーの最初の値を取得"""
+    values = self.getlist(key)
+    if not values:
+      raise KeyError(key)
+    return values[0]
+
+  def __contains__(self, key):
+    """キーが存在するかチェック"""
+    return key in self._data
+
+  def keys(self):
+    """すべてのキーを取得"""
+    return self._data.keys()
+
+  def items(self):
+    """すべてのアイテムを取得（最初の値のみ）"""
+    return [(key, self.get(key)) for key in self._data.keys()]
 
 class Request:
   """
@@ -139,8 +139,8 @@ class Request:
   def __init__(self, event, context):
     """
     Args:
-        event: AWS Lambdaイベントオブジェクト
-        context: AWS Lambdaコンテキストオブジェクト
+      event: AWS Lambdaイベントオブジェクト
+      context: AWS Lambdaコンテキストオブジェクト
     """
     self.method = event['requestContext']["httpMethod"]
     self.path = event['path']
@@ -156,13 +156,13 @@ class Request:
     self.refresh_token = None
     self.decode_token = None
     self.body = event.get('body', None)
-    
+
   def set_token(self, access_token, id_token, refresh_token):
     """認証トークンを設定します。"""
     self.access_token = access_token
     self.id_token = id_token
     self.refresh_token = refresh_token
-    
+
   def get_form_data(self):
     """リクエストボディを解析してフォームデータを取得します。"""
     if self.method == 'POST':

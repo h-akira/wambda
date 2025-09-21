@@ -229,20 +229,300 @@ def _register_template_globals(jinja_env):
 
 def _generate_debug_error_html(error_message, event, context):
     """デバッグモード用の詳細エラーHTML"""
-    return f"""
-    <h1>Error</h1>
-    <h3>Error Message</h3>
-    <pre>{error_message}</pre>
-    <h3>Event</h3>
-    <pre>{event}</pre>
-    <h3>Context</h3>
-    <pre>{context}</pre>
+    import html
+    import json
+
+    # HTMLエスケープ処理
+    safe_error_message = html.escape(str(error_message)) if error_message else "No error message"
+    safe_event = html.escape(json.dumps(event, indent=2, ensure_ascii=False)) if event else "No event data"
+    safe_context = html.escape(str(context)) if context else "No context data"
+
+    return f"""\
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAMBDA Debug Error</title>
+    <style>
+      * {{
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }}
+
+      body {{
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }}
+
+      .container {{
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }}
+
+      .header {{
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }}
+
+      .wambda-brand {{
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        letter-spacing: 2px;
+      }}
+
+      .error-title {{
+        font-size: 32px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }}
+
+      .debug-badge {{
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }}
+
+      .content {{
+        padding: 40px;
+      }}
+
+      .section {{
+        margin-bottom: 40px;
+      }}
+
+      .section:last-child {{
+        margin-bottom: 0;
+      }}
+
+      .section-title {{
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+      }}
+
+      .code-block {{
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #2d3748;
+        max-height: 300px;
+        overflow-y: auto;
+      }}
+
+      .error-message {{
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        color: #822727;
+      }}
+
+      .footer {{
+        background: #f7fafc;
+        padding: 20px 40px;
+        text-align: center;
+        color: #718096;
+        font-size: 12px;
+        border-top: 1px solid #e2e8f0;
+      }}
+
+      .refresh-hint {{
+        margin-top: 20px;
+        padding: 15px;
+        background: #ebf8ff;
+        border: 1px solid #90cdf4;
+        border-radius: 8px;
+        color: #2c5282;
+        font-size: 14px;
+      }}
+
+      @media (max-width: 768px) {{
+        .container {{
+          margin: 10px;
+          border-radius: 8px;
+        }}
+
+        .header {{
+          padding: 20px;
+        }}
+
+        .content {{
+          padding: 20px;
+        }}
+
+        .footer {{
+          padding: 15px 20px;
+        }}
+
+        .error-title {{
+          font-size: 24px;
+        }}
+
+        .wambda-brand {{
+          font-size: 20px;
+        }}
+      }}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="wambda-brand">WAMBDA FRAMEWORK</div>
+        <h1 class="error-title">Debug Error</h1>
+        <span class="debug-badge">Development Mode</span>
+      </div>
+
+      <div class="content">
+        <div class="section">
+          <h2 class="section-title">Error Message</h2>
+          <pre class="code-block error-message">{safe_error_message}</pre>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Event Data</h2>
+          <pre class="code-block">{safe_event}</pre>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Context Information</h2>
+          <pre class="code-block">{safe_context}</pre>
+        </div>
+
+        <div class="refresh-hint">
+          <strong>💡 Debug Tip:</strong> Fix the error in your code and refresh the page to see the changes.
+        </div>
+      </div>
+
+      <div class="footer">
+        Powered by WAMBDA Framework • Debug mode is enabled
+      </div>
+    </div>
+  </body>
+</html>
     """
 
 def _generate_production_error_html():
     """本番モード用の簡潔なエラーHTML"""
-    return """
-    <h1>Error</h1>
-    <p>Sorry, an error occurred.</p>
-    <p>Please try again later, or contact the administrator.</p>
+    return """\
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+        background: #f8fafc;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        color: #2d3748;
+      }
+
+      .container {
+        max-width: 500px;
+        width: 100%;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        text-align: center;
+        padding: 40px 30px;
+      }
+
+      .error-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        color: #e53e3e;
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 12px;
+      }
+
+      p {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #4a5568;
+        margin-bottom: 8px;
+      }
+
+      .refresh-button {
+        margin-top: 24px;
+        padding: 12px 24px;
+        background: #4299e1;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .refresh-button:hover {
+        background: #3182ce;
+      }
+
+      @media (max-width: 480px) {
+        .container {
+          padding: 30px 20px;
+        }
+
+        h1 {
+          font-size: 20px;
+        }
+
+        p {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="error-icon">⚠️</div>
+      <h1>エラーが発生しました</h1>
+      <p>申し訳ございませんが、処理中にエラーが発生しました。</p>
+      <p>しばらく時間をおいてから再度お試しください。</p>
+      <p>問題が解決しない場合は、管理者にお問い合わせください。</p>
+      <button class="refresh-button" onclick="window.location.reload()">ページを再読み込み</button>
+    </div>
+  </body>
+</html>
     """
