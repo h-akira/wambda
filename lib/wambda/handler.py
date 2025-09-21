@@ -144,7 +144,8 @@ class Request:
     """
     self.method = event['requestContext']["httpMethod"]
     self.path = event['path']
-    
+    self.query_params = event.get('queryStringParameters') or {}
+
     # 認証関連の属性
     self.auth = False
     self.username = None
