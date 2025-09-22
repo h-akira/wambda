@@ -1,185 +1,330 @@
 # WAMBDA
 
-## Overview
+**W**eb **A**pplication framework for **M**odern **B**ackend **D**evelopment on **A**WS
 
-WAMBDA is a Python framework for developing serverless web applications on AWS Lambda. While developed as a successor to [HAD](https://github.com/h-akira/had), the architectural philosophy is significantly different, and in some cases, continuing with HAD may be recommended depending on the use case.
+WAMBDA（ワンバダ）は、AWS Lambdaで動作するサーバーレスWebアプリケーション開発フレームワークです。Django風のアーキテクチャを採用し、単一のLambda関数ですべてのリクエストを処理する「Lambdalithアプローチ」を採用しています。
 
-## Design Philosophy
+## 特徴
 
-- **Leverage SAM**: Use AWS Serverless Application Model for infrastructure management
-- **Single Lambda**: Process all requests with one Lambda function (Lambdalith approach)
-- **S3 Static File Distribution**: Efficiently serve static files from S3
-- **Local Development**: Build local development environments equivalent to production
-- **Django-like Design**: MVC structure with urls.py, views.py, and templates
+### 🎯 設計思想
+- **SAM活用**: AWS Serverless Application Modelによるインフラ管理
+- **単一Lambda**: 一つのLambda関数ですべてのリクエストを処理（Lambdalithアプローチ）
+- **S3静的ファイル配信**: 効率的な静的ファイル配信
+- **ローカル開発環境**: 本番環境と同等のローカル開発環境
+- **Django風設計**: urls.py、views.py、テンプレートによるMVC構造
 
-## Architecture
+### 🚀 主要機能
+- **AWS Cognito認証**: 完全なユーザー認証・アカウント管理システム
+- **フォーム検証**: WTFormsによる統合フォーム処理
+- **モック環境**: motoライブラリによるローカルAWSサービステスト
+- **プロキシサーバー**: SAM Local + 静的ファイルサーバーの統合開発環境
+- **クエリパラメータ**: URLクエリパラメータの完全サポート
+- **パスワード管理**: パスワード変更・リセット機能
+- **アカウント削除**: 完全なアカウント削除機能
 
-### System Configuration
+## アーキテクチャ
 
-AWS system configuration diagram built with WAMBDA:
-
-![structure](images/structure.png)
-
-- **API Gateway**: Accept HTTP requests and forward to Lambda
-- **Lambda Function**: Single function handles all routing and business logic
-- **S3**: Serve static files (CSS, JS, images)
-- **Other AWS Services**: Additional definitions via SAM templates as needed
-
-### Lambda Internal Structure
-
-Processing flow and component configuration within Lambda function:
-
-![lambda](images/lambda_en.png)
-
-1. **Request Reception**: Receive event information from API Gateway
-2. **Initialization**: Load settings and process authentication via Master class
-3. **Routing**: Determine view functions based on urls.py configuration
-4. **View Execution**: Execute business logic through views.py functions
-5. **Response Generation**: Generate HTML via template engine and return HTTP response
-
-## 📚 Documentation
-
-**Note: All documentation is written in Japanese.**
-
-Comprehensive documentation is available in the [doc](./doc/README.md) directory.
-
-### 🚀 Getting Started
-- [Installation and Setup](./doc/installation.md)
-- [Quick Start Guide](./doc/quickstart.md)
-
-### 📖 Basic Guides
-- [Project Structure](./doc/project-structure.md)
-- [URL Routing](./doc/url-routing.md)
-- [Views and Handlers](./doc/views-handlers.md)
-- [Template System](./doc/templates.md)
-
-### 🔧 Advanced Features
-- [Authentication & Cognito Integration](./doc/authentication.md)
-- [Local Development Environment](./doc/local-development.md)
-- [Deployment Guide](./doc/deployment.md)
-
-## 🚀 Quick Start
-
-Basic development workflow with WAMBDA:
-
-### 1. Project Initialization
-```bash
-# Interactive template selection
-wambda-admin.py init -n my-project
-
-# Create with specified template
-wambda-admin.py init -n my-project -t SSR001
+### システム構成
+```
+[API Gateway] → [Lambda Function] → [AWS Services]
+     ↓
+[S3 Static Files]
 ```
 
-Available templates:
-- **SSR001**: Server-side rendering template (with authentication)
-- **API001**: API template (for Vue, React, Angular, etc. frontends)
+### Lambda内部構造
+```
+Event → Master → Router → View → Template → Response
+         ↓
+    Authentication
+         ↓
+    Request/Response
+```
 
-### 2. Start Local Development Environment
+## クイックスタート
+
+### 1. プロジェクト初期化
+```bash
+# 対話式テンプレート選択
+python wambda-admin.py init
+
+# または直接指定
+python wambda-admin.py init -n my-project -t SSR001
+```
+
+**利用可能テンプレート:**
+- **SSR001**: サーバーサイドレンダリングテンプレート（認証機能付き）
+- **API001**: APIテンプレート（Vue、React、Angular等フロントエンド用） ※準備中
+
+### 2. ローカル開発環境の起動
 ```bash
 cd my-project
 
-# Start proxy server (recommended: integrates SAM Local + static file server)
-wambda-admin.py proxy
+# プロキシサーバー起動（推奨: SAM Local + 静的ファイルサーバー統合）
+python wambda-admin.py proxy
 
-# Start servers individually
-wambda-admin.py static          # Static file server (port 8080)
-sam local start-api           # SAM Local API server (port 3000)
+# 個別サーバー起動
+python wambda-admin.py static    # 静的ファイルサーバー（ポート 8080）
+sam local start-api              # SAM Local APIサーバー（ポート 3000）
 ```
 
-### 3. Testing
+### 3. テスト
 ```bash
-# Test GET request
-wambda-admin.py get
+# 基本テスト
+python wambda-admin.py get
 
-# Test specific path and method
-wambda-admin.py get -p /api/users -m POST
+# 特定パス・メソッドのテスト
+python wambda-admin.py get -p /api/users -m POST
 
-# Use custom event file
-wambda-admin.py get -e custom-event.json
+# カスタムイベントファイル使用
+python wambda-admin.py get -e custom-event.json
+
+# リクエストボディ付きテスト
+python wambda-admin.py get -p /accounts/login -m POST -b "username=test&password=secret"
 ```
 
-### 4. Deploy to AWS
+### 4. AWS デプロイ
 ```bash
-# Deploy using SAM CLI
+# SAM CLIでデプロイ
 sam build
 sam deploy
 
-# Sync static files to S3 (AWS CLI)
+# 静的ファイルをS3に同期
 aws s3 sync static/ s3://your-bucket/static/
 ```
 
-For detailed usage, please refer to the [documentation](./doc/README.md).
-
-## 📁 Sample Projects
-
-Sample projects using WAMBDA:
-
-### Latest Version (Recommended)
-- **[HadsSampleProject2](../HadsSampleProject2/)** - Latest sample with authentication, form handling, and mock functionality
-  - AWS Cognito authentication integration
-  - Form validation with WTForms
-  - AWS service mocking with moto
-  - Account management (signup, login, email verification)
-
-### Other Project Examples
-- **[HadsSampleProject](../HadsSampleProject/)** - Basic sample (legacy version)
-- **[ShogiProject](https://github.com/h-akira/ShogiProject)** - Shogi game record management system (practical example)
-
-## 🛠️ CLI Tool Details
-
-### wambda-admin.py Commands
-
-WAMBDA management tools provide a simple and intuitive command-line interface. Everything is controlled by command-line options without depending on configuration files.
-
-#### init - Project Initialization
+### 5. CloudWatch ログ確認
 ```bash
-wambda-admin.py init -n <project-name> [-t <template>]
+# 直近1時間のログ表示
+python wambda-admin.py log -f your-function-name
 
-# Options:
-# -n, --name      : Project name (required)
-# -t, --template  : Template (SSR001, API001)
+# 特定期間のログ表示
+python wambda-admin.py log -f your-function-name --hours 24 --limit 100
 ```
 
-#### proxy - Start Proxy Server
-```bash
-wambda-admin.py proxy [options]
+## CLI ツール詳細
 
-# Options:
-# -p, --proxy-port  : Proxy server port (default: 8000)
-# -s, --sam-port    : SAM Local port (default: 3000)
-# --static-port     : Static file server port (default: 8080)
-# --static-url      : Static file URL prefix (default: /static)
-# -d, --static-dir  : Static file directory (default: static)
+### `wambda-admin.py` コマンド
+
+#### `init` - プロジェクト初期化
+```bash
+python wambda-admin.py init [-n <name>] [-t <template>]
+
+# オプション:
+# -n, --name      : プロジェクト名（対話式入力可能）
+# -t, --template  : テンプレート（SSR001、API001）
 ```
 
-#### static - Start Static File Server
+#### `proxy` - プロキシサーバー起動
 ```bash
-wambda-admin.py static [options]
+python wambda-admin.py proxy [options]
 
-# Options:
-# -p, --port        : Server port (default: 8080)
-# --static-url      : URL prefix (default: /static)
-# -d, --static-dir  : File directory (default: static)
+# オプション:
+# -p, --proxy-port  : プロキシサーバーポート（デフォルト: 8000）
+# -s, --sam-port    : SAM Localポート（デフォルト: 3000）
+# --static-port     : 静的ファイルサーバーポート（デフォルト: 8080）
+# --static-url      : 静的ファイルURLプレフィックス（デフォルト: /static）
+# -d, --static-dir  : 静的ファイルディレクトリ（デフォルト: static）
 ```
 
-#### get - Lambda Function Testing
+#### `static` - 静的ファイルサーバー起動
 ```bash
-wambda-admin.py get [options]
+python wambda-admin.py static [options]
 
-# Options:
-# -p, --path         : Path to test (default: /)
-# -m, --method       : HTTP method (default: GET)
-# -e, --event-file   : Custom event JSON file
-# -t, --template     : SAM template file (default: template.yaml)
-# -f, --function-name: Lambda function name (default: MainFunction)
+# オプション:
+# -p, --port        : サーバーポート（デフォルト: 8080）
+# --static-url      : URLプレフィックス（デフォルト: /static）
+# -d, --static-dir  : ファイルディレクトリ（デフォルト: static）
 ```
 
-## 🔧 Development Roadmap
+#### `log` - CloudWatch ログ取得
+```bash
+python wambda-admin.py log -f <function-name> [options]
 
-Planned features to be added:
-- **Template Generation**: Automatic generation of SAM templates and other configuration files
-- **Enhanced Error Handling**: Provide more detailed error information
-- **Documentation Improvements**: More detailed usage examples and best practices
-- **Additional Authentication Providers**: Support for authentication systems other than Cognito
-- **Deployment Support Features**: Integration of automated build and deployment functionality
+# オプション:
+# -f, --function-name : Lambda関数名（必須）
+# -l, --limit         : 最大ログイベント数（デフォルト: 50）
+# --hours             : 遡る時間数（デフォルト: 1）
+# -r, --region        : AWSリージョン（デフォルト: ap-northeast-1）
+# -p, --profile       : AWSプロファイル名
+# --start-time        : 開始時刻（ISO形式）
+# --end-time          : 終了時刻（ISO形式）
+```
+
+## フレームワーク詳細
+
+### 認証システム
+WAMBDAはAWS Cognitoとの完全統合を提供します：
+
+- **ユーザー登録**: メール認証付きサインアップ
+- **ログイン/ログアウト**: JWTトークンベース認証
+- **パスワード管理**: 変更・リセット機能
+- **アカウント削除**: 完全なアカウント削除
+- **セッション管理**: 自動トークンリフレッシュ
+
+### コア機能
+
+#### Master クラス (`wambda/lib/wambda/handler.py`)
+- リクエスト処理の中心クラス
+- 設定読み込み、ルーター初期化、認証処理
+- ローカル/本番環境の自動判定
+
+#### Request クラス (`wambda/lib/wambda/handler.py`)
+- HTTPリクエスト表現
+- クエリパラメータ、フォームデータ、認証情報を保持
+- MultiDict によるWTForms互換フォームデータ処理
+
+#### 認証機能 (`wambda/lib/wambda/authenticate.py`)
+- Cognito統合ログイン/サインアップ
+- JWTトークン検証・リフレッシュ
+- NO_AUTHモード（開発用）
+- メンテナンスモード対応
+
+#### ショートカット関数 (`wambda/lib/wambda/shortcuts.py`)
+- `render()`: Jinja2テンプレートレンダリング
+- `redirect()`: クエリパラメータ付きリダイレクト
+- `reverse()`: URL名からパス生成
+- `login_required`: ログイン必須デコレータ
+
+### プロジェクト構造
+```
+my-project/
+├── Lambda/
+│   ├── lambda_function.py          # エントリーポイント
+│   ├── project/
+│   │   ├── settings.py            # 設定ファイル
+│   │   ├── urls.py               # URLルーティング
+│   │   └── views.py              # カスタムビュー（404等）
+│   ├── accounts/                   # 認証機能
+│   │   ├── views.py              # 認証ビュー
+│   │   ├── forms.py              # 認証フォーム
+│   │   └── urls.py               # 認証URL
+│   ├── mock/                      # モック設定
+│   │   ├── ssm.py               # SSMパラメータモック
+│   │   └── dynamodb.py          # DynamoDBモック
+│   └── templates/                # Jinja2テンプレート
+├── static/                        # 静的ファイル
+├── template.yaml                  # SAM設定
+└── samconfig.toml                # SAM デプロイ設定
+```
+
+### 設定システム (`project/settings.py`)
+```python
+# 基本設定
+BASE_DIR = "/path/to/lambda"
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+STATIC_URL = "/static"
+MAPPING_PATH = ""  # API Gateway ステージ
+
+# 認証設定
+COGNITO_SSM_PARAMS = {
+    'USER_POOL_ID': '/Cognito/user_pool_id',
+    'CLIENT_ID': '/Cognito/client_id',
+    'CLIENT_SECRET': '/Cognito/client_secret'
+}
+
+# URL設定
+LOGIN_URL = "accounts:login"
+SIGNUP_URL = "accounts:signup"
+VERIFY_URL = "accounts:verify"
+LOGOUT_URL = "accounts:logout"
+
+# 開発・テスト設定
+DEBUG = True
+USE_MOCK = False
+NO_AUTH = False
+DENY_SIGNUP = False
+DENY_LOGIN = False
+```
+
+### 最新機能
+
+#### クエリパラメータサポート
+```python
+# リクエストからクエリパラメータ取得
+username = master.request.query_params.get('username', '')
+message = master.request.query_params.get('message', '')
+
+# リダイレクト時にクエリパラメータ付与
+return redirect(master, 'accounts:login', query_params={
+    'message': 'verify_success'
+})
+```
+
+#### フォーム処理（WTForms統合）
+```python
+from wtforms import Form, StringField, PasswordField, validators
+
+class LoginForm(Form):
+    username = StringField('ユーザー名', [validators.DataRequired()])
+    password = PasswordField('パスワード', [validators.DataRequired()])
+
+# ビューでの使用
+def login_view(master):
+    if master.request.method == 'POST':
+        form = LoginForm(master.request.get_form_data())
+        if form.validate():
+            # ログイン処理
+            pass
+```
+
+#### アカウント削除機能
+```python
+def delete_account_view(master):
+    # パスワード認証確認
+    # Cognitoからユーザー削除
+    # セッション削除
+    # ホームページへリダイレクト
+```
+
+## モック環境
+
+開発時のAWSサービスモックをサポート：
+
+```python
+# settings.py
+USE_MOCK = True
+
+# mock/ssm.py - SSMパラメータモック
+# mock/dynamodb.py - DynamoDBテーブルモック
+```
+
+## 依存関係
+
+主要なPythonパッケージ：
+- `boto3/botocore`: AWS SDK
+- `Jinja2`: テンプレートエンジン
+- `WTForms`: フォーム処理
+- `PyJWT`: JWTトークン処理
+- `moto`: AWSモック（開発用）
+
+## ドキュメント
+
+📚 **詳細なドキュメント**: [doc/README.md](./doc/README.md)
+
+### 基本ガイド
+- [インストールとセットアップ](./doc/installation.md)
+- [プロジェクト構造](./doc/project-structure.md)
+- [URLルーティング](./doc/url-routing.md)
+- [ビューとハンドラー](./doc/views-handlers.md)
+
+### 高度な機能
+- [認証とCognito統合](./doc/authentication.md)
+- [ローカル開発環境](./doc/local-development.md)
+- [デプロイガイド](./doc/deployment.md)
+
+## サンプルプロジェクト
+
+- **[WambdaInitProject_SSR001](https://github.com/h-akira/WambdaInitProject_SSR001)**: 最新の完全な認証機能付きテンプレート
+- **[ShogiProject](https://github.com/h-akira/ShogiProject)**: 将棋棋譜管理システム（実用例）
+
+## ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
+
+## 貢献
+
+バグ報告、機能リクエスト、プルリクエストを歓迎します。
+
+---
+
+**WAMBDA** - Modern Serverless Web Application Framework for AWS

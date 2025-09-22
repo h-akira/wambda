@@ -205,15 +205,33 @@ def init():
     "SSR001": "Server Side Rendering Template",
     "API001": "API Template (For Vue, React, Angular, etc.)",
   }
+  template_urls = {
+    "SSR001": "https://github.com/h-akira/WambdaInitProject_SSR001.git",
+    "API001": None,  # API001テンプレートはまだGitHubリポジトリがない
+  }
+
   parser = argparse.ArgumentParser(description="""\
 
 """, formatter_class = argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument("--version", action="version", version='%(prog)s 0.0.1')
-  parser.add_argument("-n", "--name", metavar="name", help="project name", required=True)
+  parser.add_argument("-n", "--name", metavar="name", help="project name")
   parser.add_argument("-t", "--template", metavar="template", choices = templates.keys(), help="project name")
   # parser.add_argument("-d", "--deploy", action="store_true", help="exec sam deploy")
   parser.add_argument("function", metavar="function", help="function to run")
   options = parser.parse_args()
+
+  # Get project name interactively if not provided
+  if options.name is None:
+    options.name = input("Please enter project name: ").strip()
+    if not options.name:
+      print("Error: Project name cannot be empty")
+      sys.exit(1)
+
+  # Check if target directory already exists
+  if os.path.exists(options.name):
+    print(f"Error: Directory '{options.name}' already exists")
+    sys.exit(1)
+
   if options.template is None:
     print("Available templates:")
     for key, value in templates.items():
@@ -223,11 +241,39 @@ def init():
     if options.template not in templates.keys():
       print(f"Invalid template: {options.template}")
       sys.exit()
-  DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../lib/hads/templates", options.template)
-  if not os.path.isdir(DIR):
-    print(f"Template directory does not exist: {DIR}")
-    sys.exit()
-  shutil.copytree(DIR, options.name)
+
+  template_url = template_urls.get(options.template)
+
+  if not template_url:
+    print(f"Error: Template {options.template} does not have a GitHub repository configured")
+    sys.exit(1)
+
+  # Clone template from GitHub repository
+  print(f"Cloning template from {template_url}...")
+  try:
+    # Clone the repository
+    subprocess.run(['git', 'clone', template_url, options.name], check=True)
+
+    # Remove .git directory
+    git_dir = os.path.join(options.name, '.git')
+    if os.path.exists(git_dir):
+      shutil.rmtree(git_dir)
+      print(f"Removed .git directory from {options.name}")
+
+    print(f"Successfully created project '{options.name}' from template {options.template}")
+
+  except subprocess.CalledProcessError as e:
+    print(f"Error cloning repository: {e}")
+    # Clean up partial clone if it exists
+    if os.path.exists(options.name):
+      shutil.rmtree(options.name)
+    sys.exit(1)
+  except Exception as e:
+    print(f"Error during initialization: {e}")
+    # Clean up partial clone if it exists
+    if os.path.exists(options.name):
+      shutil.rmtree(options.name)
+    sys.exit(1)
 
 
 

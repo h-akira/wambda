@@ -66,7 +66,7 @@ WAMBDAを使用したシステムの構成は以下の通りです：
 
 Lambda関数内部では、Djangoライクなアーキテクチャを採用しています：
 
-![lambda](../images/lambda_jp.png)
+![lambda](./images/lambda_jp.png)
 
 ## 他のフレームワークとの違い
 
