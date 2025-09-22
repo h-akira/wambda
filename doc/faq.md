@@ -7,7 +7,6 @@
 - [開発環境について](#開発環境について)
 - [デプロイメントについて](#デプロイメントについて)
 - [パフォーマンスについて](#パフォーマンスについて)
-- [セキュリティについて](#セキュリティについて)
 - [トラブルシューティング](#トラブルシューティング)
 
 ---
@@ -41,7 +40,6 @@
 - **マイクロサービス**: 小規模で独立したサービス
 - **Webアプリケーション**: 軽量なWebアプリ
 - **管理ツール**: 社内ツール、ダッシュボード
-- **イベント処理**: Webhook、バッチ処理
 
 ---
 
@@ -86,10 +84,7 @@ python -m wambda.local_server --port 8080
 
 ```python
 # settings.py
-TEMPLATE_DIRS = [
-    'templates',
-    'static/templates'
-]
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 ```
 
 ---
@@ -153,66 +148,6 @@ DATABASE_URL = response['Parameter']['Value']
 3. **コード最適化**:
    - 不要な処理の削除
    - 非同期処理の活用
-
-### Q: メモリ使用量を最適化するには？
-
-**A:** 以下の方法が効果的です：
-
-```python
-# 大きなオブジェクトの適切な管理
-import gc
-
-def handler(event, context):
-    # 処理
-    result = heavy_processing()
-    
-    # 明示的なガベージコレクション
-    gc.collect()
-    
-    return result
-```
-
----
-
-## セキュリティについて
-
-### Q: API認証のベストプラクティスは？
-
-**A:** 以下の方法を推奨します：
-
-1. **JWT Token**: 短期間有効なトークン
-2. **API Key**: 外部サービス連携用
-3. **AWS Cognito**: ユーザー認証
-4. **IAM Role**: AWS リソースアクセス
-
-### Q: CORS設定で問題が発生します
-
-**A:** 適切なCORS設定を行ってください：
-
-```python
-# handler.py
-def cors_headers():
-    return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-    }
-
-def handler(event, context):
-    # OPTIONSリクエストの処理
-    if event['httpMethod'] == 'OPTIONS':
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': ''
-        }
-    
-    # 通常の処理
-    response = process_request(event)
-    response['headers'].update(cors_headers())
-    
-    return response
-```
 
 ---
 
