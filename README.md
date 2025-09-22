@@ -315,7 +315,6 @@ USE_MOCK = True
 ## サンプルプロジェクト
 
 - **[WambdaInitProject_SSR001](https://github.com/h-akira/WambdaInitProject_SSR001)**: 最新の完全な認証機能付きテンプレート
-- **[ShogiProject](https://github.com/h-akira/ShogiProject)**: 将棋棋譜管理システム（実用例）
 
 ## ライセンス
 
