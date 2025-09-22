@@ -1,13 +1,10 @@
 # デプロイメントガイド
 
-このガイドでは、WAMBDAアプリケーションをAWS Lambdaにデプロイする方法を詳しく説明します。
+このガイドでは、WAMBDAアプリケーションをAWS SAM（Serverless Application Model）を使用してAWS Lambdaにデプロイする方法を説明します。
 
 ## 目次
 - [デプロイメント概要](#デプロイメント概要)
-- [手動デプロイ](#手動デプロイ)
-- [Serverless Framework](#serverless-framework)
 - [AWS SAM](#aws-sam)
-- [CI/CD パイプライン](#cicd-パイプライン)
 - [環境管理](#環境管理)
 - [モニタリング設定](#モニタリング設定)
 - [トラブルシューティング](#トラブルシューティング)
@@ -16,214 +13,28 @@
 
 ## デプロイメント概要
 
-### デプロイメント方式の比較
-
-| 方式 | 難易度 | 機能 | 推奨用途 |
-|------|--------|------|----------|
-| 手動デプロイ | 低 | 基本的 | 学習・プロトタイプ |
-| Serverless Framework | 中 | 高機能 | 本格的な開発 |
-| AWS SAM | 中 | AWS特化 | AWS環境のみ |
-| CI/CD | 高 | 自動化 | 本番運用 |
-
 ### 必要な準備
 
 1. **AWS アカウント**: アクティブなAWSアカウント
 2. **IAM権限**: Lambda、API Gateway、CloudFormationの権限
 3. **AWS CLI**: 設定済みのAWS CLI
-4. **Python環境**: Python 3.8以上
+4. **AWS SAM CLI**: インストール済みのSAM CLI
+5. **Python環境**: Python 3.8以上
 
----
-
-## 手動デプロイ
-
-### 基本的なデプロイ手順
-
-#### 1. デプロイパッケージの作成
+### AWS SAM CLI のインストール
 
 ```bash
-# プロジェクトディレクトリに移動
-cd your-wambda-project
+# macOS (Homebrew)
+brew tap aws/tap
+brew install aws-sam-cli
 
-# 依存関係をインストール
-mkdir deployment-package
-pip install -r requirements.txt -t deployment-package/
+# Windows (Chocolatey)
+choco install aws-sam-cli
 
-# プロジェクトファイルをコピー
-cp -r lib/ deployment-package/
-cp handler.py deployment-package/
-cp urls.py deployment-package/
-cp settings.py deployment-package/
-
-# ZIPファイルを作成
-cd deployment-package
-zip -r ../deployment-package.zip .
-cd ..
-```
-
-#### 2. Lambda関数の作成
-
-```bash
-# Lambda関数を作成
-aws lambda create-function \
-    --function-name wambda-app \
-    --runtime python3.9 \
-    --role arn:aws:iam::YOUR_ACCOUNT_ID:role/lambda-execution-role \
-    --handler handler.main \
-    --zip-file fileb://deployment-package.zip \
-    --timeout 30 \
-    --memory-size 512
-```
-
-#### 3. API Gatewayの設定
-
-```bash
-# REST APIを作成
-aws apigateway create-rest-api --name wambda-api
-
-# リソースとメソッドを設定
-API_ID="your-api-id"
-RESOURCE_ID="your-resource-id"
-
-# プロキシリソースを作成
-aws apigateway create-resource \
-    --rest-api-id $API_ID \
-    --parent-id $RESOURCE_ID \
-    --path-part "{proxy+}"
-
-# メソッドを作成
-aws apigateway put-method \
-    --rest-api-id $API_ID \
-    --resource-id $RESOURCE_ID \
-    --http-method ANY \
-    --authorization-type NONE
-```
-
-#### 4. 関数の更新
-
-```bash
-# コードを更新
-aws lambda update-function-code \
-    --function-name wambda-app \
-    --zip-file fileb://deployment-package.zip
-```
-
----
-
-## Serverless Framework
-
-### セットアップ
-
-```bash
-# Serverless Frameworkをインストール
-npm install -g serverless
-
-# プロジェクトディレクトリでserverless.ymlを作成
-```
-
-### serverless.yml設定
-
-```yaml
-# serverless.yml
-service: wambda-app
-
-frameworkVersion: '3'
-
-provider:
-  name: aws
-  runtime: python3.9
-  stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'us-east-1'}
-  memorySize: 512
-  timeout: 30
-  
-  environment:
-    STAGE: ${self:provider.stage}
-    DATABASE_URL: ${env:DATABASE_URL_${self:provider.stage}}
-    
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/*"
-
-functions:
-  api:
-    handler: handler.main
-    events:
-      - http:
-          path: /{proxy+}
-          method: ANY
-          cors: true
-      - http:
-          path: /
-          method: ANY
-          cors: true
-
-plugins:
-  - serverless-python-requirements
-
-custom:
-  pythonRequirements:
-    dockerizePip: true
-    layer: true
-
-package:
-  exclude:
-    - node_modules/**
-    - venv/**
-    - .git/**
-    - .pytest_cache/**
-    - tests/**
-    - "*.pyc"
-    - __pycache__/**
-```
-
-### プラグインのインストール
-
-```bash
-# 必要なプラグインをインストール
-npm init -y
-npm install --save-dev serverless-python-requirements
-```
-
-### デプロイコマンド
-
-```bash
-# 開発環境にデプロイ
-serverless deploy --stage dev
-
-# 本番環境にデプロイ
-serverless deploy --stage prod
-
-# 特定の関数のみ更新
-serverless deploy function --function api --stage dev
-
-# 環境変数を設定してデプロイ
-DATABASE_URL_dev="your-database-url" serverless deploy --stage dev
-```
-
-### 環境別設定
-
-```yaml
-# serverless.yml
-provider:
-  environment:
-    DATABASE_URL: ${self:custom.config.${self:provider.stage}.DATABASE_URL}
-    CORS_ORIGINS: ${self:custom.config.${self:provider.stage}.CORS_ORIGINS}
-
-custom:
-  config:
-    dev:
-      DATABASE_URL: ${env:DATABASE_URL_DEV}
-      CORS_ORIGINS: "*"
-    prod:
-      DATABASE_URL: ${env:DATABASE_URL_PROD}
-      CORS_ORIGINS: "https://yourapp.com"
+# Linux
+curl -L "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip" -o "aws-sam-cli.zip"
+unzip aws-sam-cli.zip -d sam-installation
+sudo ./sam-installation/install
 ```
 
 ---
@@ -241,10 +52,10 @@ Description: WAMBDA Application
 Globals:
   Function:
     Timeout: 30
-    Runtime: python3.9
+    Runtime: python3.12
     Environment:
       Variables:
-        STAGE: !Ref Stage
+        WAMBDA_LOG_LEVEL: !Ref LogLevel
 
 Parameters:
   Stage:
@@ -254,9 +65,47 @@ Parameters:
       - dev
       - staging
       - prod
+    Description: Deployment stage
+
+  LogLevel:
+    Type: String
+    Default: INFO
+    AllowedValues:
+      - DEBUG
+      - INFO
+      - WARNING
+      - ERROR
+    Description: Log level for the application
 
 Resources:
-  HadsApi:
+  # Lambda Function
+  MainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Lambda/
+      Handler: lambda_function.lambda_handler
+      MemorySize: 512
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MainApi
+            Path: /
+            Method: ANY
+        ProxyApiGreedy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MainApi
+            Path: /{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          WAMBDA_MAPPING_PATH: !Sub "/${Stage}"
+          WAMBDA_DEBUG: !If [IsDevStage, "true", "false"]
+          WAMBDA_USE_MOCK: !If [IsDevStage, "true", "false"]
+
+  # API Gateway
+  MainApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
@@ -264,50 +113,120 @@ Resources:
         AllowMethods: "'*'"
         AllowHeaders: "'*'"
         AllowOrigin: "'*'"
+        AllowCredentials: true
 
-  HadsFunction:
-    Type: AWS::Serverless::Function
+  # Static Files S3 Bucket
+  StaticFilesBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      CodeUri: .
-      Handler: handler.main
-      MemorySize: 512
-      Events:
-        ProxyApiRoot:
-          Type: Api
-          Properties:
-            RestApiId: !Ref HadsApi
-            Path: /
-            Method: ANY
-        ProxyApiGreedy:
-          Type: Api
-          Properties:
-            RestApiId: !Ref HadsApi
-            Path: /{proxy+}
-            Method: ANY
-      Environment:
-        Variables:
-          DATABASE_URL: !Sub "{{resolve:ssm:/wambda/${Stage}/database-url}}"
+      BucketName: !Sub "${AWS::StackName}-static-files-${Stage}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
 
-  TodoTable:
-    Type: AWS::DynamoDB::Table
+  # S3 Bucket Policy for Static Files
+  StaticFilesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
     Properties:
-      TableName: !Sub "todos-${Stage}"
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
+      Bucket: !Ref StaticFilesBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${StaticFilesBucket}/*"
+
+  # CloudFront Distribution for Static Files
+  StaticFilesDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt StaticFilesBucket.RegionalDomainName
+            Id: S3Origin
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingOptimized
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  # Lambda Execution Role
+  MainFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSMParameterAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/Cognito/*"
+        - PolicyName: CognitoAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminInitiateAuth
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminConfirmSignUp
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:ChangePassword
+                  - cognito-idp:ForgotPassword
+                  - cognito-idp:ConfirmForgotPassword
+                Resource: "*"
+
+Conditions:
+  IsDevStage: !Equals [!Ref Stage, "dev"]
 
 Outputs:
-  HadsApi:
+  ApiEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${HadsApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
-    
-  HadsFunctionArn:
-    Description: "WAMBDA Lambda Function ARN"
-    Value: !GetAtt HadsFunction.Arn
+    Value: !Sub "https://${MainApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiEndpoint"
+
+  LambdaFunctionArn:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt MainFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaFunctionArn"
+
+  StaticFilesBucketName:
+    Description: "S3 bucket name for static files"
+    Value: !Ref StaticFilesBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-StaticFilesBucket"
+
+  StaticFilesUrl:
+    Description: "CloudFront URL for static files"
+    Value: !Sub "https://${StaticFilesDistribution.DomainName}"
+    Export:
+      Name: !Sub "${AWS::StackName}-StaticFilesUrl"
 ```
 
 ### samconfig.toml設定
@@ -320,227 +239,133 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "wambda-app"
-s3_bucket = "your-sam-deployment-bucket"
+s3_bucket = ""  # SAM が自動的に作成
 s3_prefix = "wambda-app"
-region = "us-east-1"
+region = "ap-northeast-1"
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Stage=dev"
+parameter_overrides = "Stage=dev LogLevel=INFO"
+confirm_changeset = true
+fail_on_empty_changeset = false
+
+[staging]
+[staging.deploy]
+[staging.deploy.parameters]
+stack_name = "wambda-app-staging"
+parameter_overrides = "Stage=staging LogLevel=INFO"
+confirm_changeset = true
 
 [prod]
 [prod.deploy]
 [prod.deploy.parameters]
 stack_name = "wambda-app-prod"
-parameter_overrides = "Stage=prod"
+parameter_overrides = "Stage=prod LogLevel=WARNING"
+confirm_changeset = true
+fail_on_empty_changeset = false
 ```
 
 ### デプロイコマンド
 
 ```bash
-# ビルド
+# プロジェクトディレクトリに移動
+cd your-wambda-project
+
+# 依存関係のビルド
 sam build
 
-# ローカルテスト
-sam local start-api
+# ローカルテスト（オプション）
+sam local start-api --port 3000
 
-# デプロイ
+# 開発環境にデプロイ
 sam deploy --config-env default
 
-# 本番環境デプロイ
+# ステージング環境にデプロイ
+sam deploy --config-env staging
+
+# 本番環境にデプロイ
 sam deploy --config-env prod
+
+# 初回デプロイ時（ガイド付き）
+sam deploy --guided
 ```
 
----
+### 静的ファイルのデプロイ
 
-## CI/CD パイプライン
+```bash
+# S3バケット名を取得
+BUCKET_NAME=$(aws cloudformation describe-stacks \
+  --stack-name wambda-app \
+  --query 'Stacks[0].Outputs[?OutputKey==`StaticFilesBucketName`].OutputValue' \
+  --output text)
 
-### GitHub Actions設定
+# 静的ファイルをS3にアップロード
+aws s3 sync static/ s3://$BUCKET_NAME/static/ --delete
 
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy WAMBDA Application
+# CloudFrontのキャッシュをクリア（必要に応じて）
+DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+  --stack-name wambda-app \
+  --query 'Stacks[0].Outputs[?OutputKey==`StaticFilesDistributionId`].OutputValue' \
+  --output text)
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov
-    
-    - name: Run tests
-      run: |
-        pytest tests/ --cov=./ --cov-report=xml
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-
-  deploy-dev:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    
-    - name: Install Serverless Framework
-      run: npm install -g serverless serverless-python-requirements
-    
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-    
-    - name: Deploy to development
-      run: serverless deploy --stage dev
-      env:
-        DATABASE_URL_dev: ${{ secrets.DATABASE_URL_DEV }}
-
-  deploy-prod:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    
-    - name: Install Serverless Framework
-      run: npm install -g serverless serverless-python-requirements
-    
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-    
-    - name: Deploy to production
-      run: serverless deploy --stage prod
-      env:
-        DATABASE_URL_prod: ${{ secrets.DATABASE_URL_PROD }}
-```
-
-### AWS CodePipeline設定
-
-```yaml
-# buildspec.yml
-version: 0.2
-
-phases:
-  install:
-    runtime-versions:
-      python: 3.9
-      nodejs: 18
-    commands:
-      - echo Installing dependencies
-      - pip install -r requirements.txt
-      - npm install -g serverless serverless-python-requirements
-
-  pre_build:
-    commands:
-      - echo Running tests
-      - python -m pytest tests/
-
-  build:
-    commands:
-      - echo Build started on `date`
-      - serverless package --stage $STAGE
-
-  post_build:
-    commands:
-      - echo Deploying to $STAGE
-      - serverless deploy --stage $STAGE
-
-artifacts:
-  files:
-    - '**/*'
+aws cloudfront create-invalidation \
+  --distribution-id $DISTRIBUTION_ID \
+  --paths "/*"
 ```
 
 ---
 
 ## 環境管理
 
-### 環境変数の管理
+### SSM Parameter Store を使用した設定管理
 
 ```bash
-# AWS Systems Manager Parameter Store を使用
+# Cognito設定をSSMに保存
 aws ssm put-parameter \
-    --name "/wambda/dev/database-url" \
-    --value "your-database-url" \
-    --type "SecureString"
+    --name "/Cognito/user_pool_id" \
+    --value "ap-northeast-1_XXXXXXXXX" \
+    --type "String"
 
 aws ssm put-parameter \
-    --name "/wambda/prod/database-url" \
-    --value "your-production-database-url" \
+    --name "/Cognito/client_id" \
+    --value "your-client-id" \
+    --type "String"
+
+aws ssm put-parameter \
+    --name "/Cognito/client_secret" \
+    --value "your-client-secret" \
     --type "SecureString"
 ```
 
 ### 設定ファイルでの参照
 
 ```python
-# settings.py
-import boto3
+# Lambda/project/settings.py
 import os
 
-def get_parameter(name, with_decryption=True):
-    """SSM Parameter Store から値を取得"""
-    ssm = boto3.client('ssm')
-    try:
-        response = ssm.get_parameter(
-            Name=name,
-            WithDecryption=with_decryption
-        )
-        return response['Parameter']['Value']
-    except Exception as e:
-        print(f"Error getting parameter {name}: {e}")
-        return None
+# 基本設定
+MAPPING_PATH = os.environ.get('WAMBDA_MAPPING_PATH', "")
+DEBUG = os.environ.get('WAMBDA_DEBUG', 'False').lower() == 'true'
+USE_MOCK = os.environ.get('WAMBDA_USE_MOCK', 'False').lower() == 'true'
+LOG_LEVEL = os.environ.get('WAMBDA_LOG_LEVEL', 'INFO')
 
-STAGE = os.getenv('STAGE', 'dev')
-DATABASE_URL = (
-    os.getenv('DATABASE_URL') or 
-    get_parameter(f'/wambda/{STAGE}/database-url')
-)
+# 認証設定（SSMパラメータ名）
+COGNITO_SSM_PARAMS = {
+    'USER_POOL_ID': '/Cognito/user_pool_id',
+    'CLIENT_ID': '/Cognito/client_id',
+    'CLIENT_SECRET': '/Cognito/client_secret'
+}
 ```
 
-### 複数環境の管理
+### 環境別パラメータ管理
 
-```yaml
-# environments/dev.yml
-DATABASE_URL: "postgresql://localhost:5432/wambda_dev"
-DEBUG: true
-CORS_ORIGINS: "*"
+```bash
+# 開発環境
+aws ssm put-parameter --name "/Cognito/dev/user_pool_id" --value "dev-pool-id" --type "String"
 
-# environments/prod.yml
-DATABASE_URL: "${ssm:/wambda/prod/database-url}"
-DEBUG: false
-CORS_ORIGINS: "https://yourapp.com"
+# ステージング環境
+aws ssm put-parameter --name "/Cognito/staging/user_pool_id" --value "staging-pool-id" --type "String"
+
+# 本番環境
+aws ssm put-parameter --name "/Cognito/prod/user_pool_id" --value "prod-pool-id" --type "String"
 ```
 
 ---
@@ -550,58 +375,59 @@ CORS_ORIGINS: "https://yourapp.com"
 ### CloudWatch Alarms
 
 ```yaml
-# serverless.yml
-resources:
-  Resources:
-    ErrorAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-errors
-        AlarmDescription: Function errors
-        MetricName: Errors
-        Namespace: AWS/Lambda
-        Statistic: Sum
-        Period: 60
-        EvaluationPeriods: 2
-        Threshold: 5
-        ComparisonOperator: GreaterThanThreshold
-        Dimensions:
-          - Name: FunctionName
-            Value: ${self:service}-${self:provider.stage}-api
+# template.yaml に追加
+Resources:
+  # エラー率アラーム
+  ErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-error-rate"
+      AlarmDescription: Lambda function error rate
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref MainFunction
 
-    DurationAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-duration
-        AlarmDescription: Function duration
-        MetricName: Duration
-        Namespace: AWS/Lambda
-        Statistic: Average
-        Period: 60
-        EvaluationPeriods: 2
-        Threshold: 10000
-        ComparisonOperator: GreaterThanThreshold
+  # レスポンス時間アラーム
+  DurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-duration"
+      AlarmDescription: Lambda function duration
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10000
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref MainFunction
 ```
 
 ### X-Ray トレーシング
 
 ```yaml
-# serverless.yml
-provider:
-  tracing:
-    lambda: true
-    apiGateway: true
-
-functions:
-  api:
-    handler: handler.main
-    tracing: Active
+# template.yaml のGlobalsセクションに追加
+Globals:
+  Function:
+    Tracing: Active
+  Api:
+    TracingConfig:
+      PassthroughBehavior: Active
 ```
 
 ### カスタムメトリクス
 
 ```python
-# monitoring.py
+# Lambda/monitoring.py
 import boto3
 import time
 from functools import wraps
@@ -609,35 +435,37 @@ from functools import wraps
 cloudwatch = boto3.client('cloudwatch')
 
 def monitor_performance(metric_name):
+    """パフォーマンス監視デコレータ"""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             start_time = time.time()
             try:
                 result = func(*args, **kwargs)
-                # 成功メトリクス
                 put_metric(f"{metric_name}_success", 1)
                 return result
             except Exception as e:
-                # エラーメトリクス
                 put_metric(f"{metric_name}_error", 1)
                 raise
             finally:
-                # 実行時間メトリクス
                 duration = (time.time() - start_time) * 1000
                 put_metric(f"{metric_name}_duration", duration, "Milliseconds")
         return wrapper
     return decorator
 
 def put_metric(metric_name, value, unit="Count"):
-    cloudwatch.put_metric_data(
-        Namespace='WAMBDA/Application',
-        MetricData=[{
-            'MetricName': metric_name,
-            'Value': value,
-            'Unit': unit
-        }]
-    )
+    """CloudWatch メトリクス送信"""
+    try:
+        cloudwatch.put_metric_data(
+            Namespace='WAMBDA/Application',
+            MetricData=[{
+                'MetricName': metric_name,
+                'Value': value,
+                'Unit': unit
+            }]
+        )
+    except Exception as e:
+        print(f"Failed to put metric {metric_name}: {e}")
 ```
 
 ---
@@ -646,20 +474,22 @@ def put_metric(metric_name, value, unit="Count"):
 
 ### よくある問題と解決方法
 
-#### 1. デプロイパッケージが大きすぎる
+#### 1. SAM ビルドエラー
 
 ```bash
-# 不要なファイルを除外
-echo "*.pyc" >> .serverlessignore
-echo "__pycache__/" >> .serverlessignore
-echo "tests/" >> .serverlessignore
-echo ".git/" >> .serverlessignore
+# 依存関係の問題
+pip install -r Lambda/requirements.txt
 
-# Lambda Layers を使用
-serverless plugin install -n serverless-python-requirements
+# Pythonバージョンの確認
+python --version
+
+# SAM CLIのバージョン確認
+sam --version
 ```
 
-#### 2. 権限エラー
+#### 2. デプロイ権限エラー
+
+必要なIAM権限を確認してください：
 
 ```json
 {
@@ -668,11 +498,12 @@ serverless plugin install -n serverless-python-requirements
         {
             "Effect": "Allow",
             "Action": [
+                "cloudformation:*",
                 "lambda:*",
                 "apigateway:*",
-                "cloudformation:*",
                 "iam:*",
-                "s3:*"
+                "s3:*",
+                "cloudfront:*"
             ],
             "Resource": "*"
         }
@@ -680,36 +511,59 @@ serverless plugin install -n serverless-python-requirements
 }
 ```
 
-#### 3. 環境変数が設定されない
+#### 3. 環境変数が反映されない
 
 ```bash
-# デプロイ前に環境変数を確認
-serverless print --stage dev
+# スタックの出力確認
+aws cloudformation describe-stacks --stack-name wambda-app
 
-# 環境変数を明示的に設定
-export DATABASE_URL_dev="your-url"
-serverless deploy --stage dev
+# Lambda関数の環境変数確認
+aws lambda get-function-configuration --function-name wambda-app-MainFunction
+```
+
+#### 4. 静的ファイルが表示されない
+
+```bash
+# S3バケットの存在確認
+aws s3 ls s3://your-bucket-name/
+
+# バケットポリシーの確認
+aws s3api get-bucket-policy --bucket your-bucket-name
+
+# CloudFrontの配信確認
+aws cloudfront get-distribution --id your-distribution-id
 ```
 
 ### ログの確認
 
 ```bash
-# Serverless Framework でログ確認
-serverless logs --function api --stage dev --tail
+# SAM CLI でログ確認
+sam logs --stack-name wambda-app --tail
 
 # AWS CLI でログ確認
-aws logs tail /aws/lambda/wambda-app-dev-api --follow
+aws logs tail /aws/lambda/wambda-app-MainFunction --follow
+
+# 特定期間のログ取得
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/wambda-app-MainFunction \
+  --start-time $(date -d '1 hour ago' +%s)000
 ```
+
+### デバッグのヒント
+
+1. **ローカルテスト**: `sam local start-api` でローカル環境を構築
+2. **段階的デプロイ**: 開発環境→ステージング→本番の順でデプロイ
+3. **ログレベル調整**: 開発時は`DEBUG`、本番では`WARNING`以上
+4. **リソース監視**: CloudWatch でメトリクスとアラームを設定
 
 ---
 
 ## 関連ドキュメント
 
-- [ベストプラクティス](best-practices.md)
-- [トラブルシューティング](troubleshooting.md)
-- [モニタリングとロギング](monitoring.md)
-- [セキュリティガイド](security.md)
+- [プロジェクト構造](./project-structure.md) - ディレクトリ構成の詳細
+- [認証とCognito統合](./authentication.md) - 認証システムの設定
+- [ローカル開発環境](./local-development.md) - 開発環境のセットアップ
 
 ---
 
-[← 戻る](README.md)
+[← ドキュメント目次に戻る](./README.md)
