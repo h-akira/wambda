@@ -80,11 +80,6 @@ Lambda関数内部では、Djangoライクなアーキテクチャを採用し�
 | デプロイ | 複雑な設定が必要 | SAMによる簡単デプロイ |
 | 開発環境 | ローカルサーバー | SAM Localによるシミュレーション |
 
-### HADの後継としての位置づけ
-
-WAMBDAは[HAD](https://github.com/h-akira/had)の後継フレームワークですが、アーキテクチャは大きく異なります。
-HADでは1能1Lambdaで多数のLambdawを作成し、SAMを用いずCloudFormationのみデプロイされていましたが、
-WAMBDAではLambdalithアプローチでSAMを用います。これにより、コールドスタートの抑制やコードの単純化を実現しています。
 
 ## 適用分野
 
