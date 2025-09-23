@@ -125,16 +125,10 @@ sam deploy --config-env production
 ### コマンドラインテスト
 
 ```bash
-# GETリクエストのテスト
-wambda-admin.py get -p /
-wambda-admin.py get -p /api/users
-wambda-admin.py get -p /blog/my-post
-
-# リクエストボディ付きPOSTテスト
-wambda-admin.py get -p /api/users -m POST -b '{"name":"John"}'
-
-# カスタムイベントファイルでテスト
-wambda-admin.py get -e event.json
+# lambda_function.pyを直接実行してテスト
+cd Lambda
+python lambda_function.py
+# 対話的にパスやメソッド、リクエストボディを指定可能
 ```
 
 ### テストイベントファイル
@@ -376,14 +370,15 @@ def set_data():
 ### Mock環境での開発ワークフロー
 
 ```bash
-# 1. Mock設定の確認
-wambda-admin.py get -p /debug/config  # Mock設定状況確認
+# 1. Mock環境でのテスト
+cd Lambda
+python lambda_function.py
+# 対話的に以下のパスをテスト:
+# /debug/config  - Mock設定状況確認
+# /api/users     - DynamoDBモックデータ取得
+# /config        - SSMモックパラメータ取得
 
-# 2. Mockデータを使った機能テスト
-wambda-admin.py get -p /api/users      # DynamoDBモックデータ取得
-wambda-admin.py get -p /config         # SSMモックパラメータ取得
-
-# 3. プロキシサーバー起動（Mock環境）
+# 2. プロキシサーバー起動（Mock環境）
 wambda-admin.py proxy                  # ブラウザでhttp://localhost:8000
 
 # 4. 開発とテストのサイクル
@@ -395,8 +390,10 @@ wambda-admin.py proxy                  # ブラウザでhttp://localhost:8000
 Mock機能では詳細なログが出力されます：
 
 ```bash
-$ wambda-admin.py get -p /api/users
-Importing lambda_handler from /path/to/Lambda/lambda_function.py
+$ cd Lambda && python lambda_function.py
+WAMBDA Debug Handler
+Enter path (default: /): /api/users
+Enter method (GET/POST/PUT/DELETE, default: GET): GET
 Executing lambda_handler...
 Setting up SSM mock data...
 Set SSM parameter: /MyProject/Database/Host

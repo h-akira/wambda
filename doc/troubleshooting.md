@@ -581,14 +581,10 @@ def lambda_handler(event, context):
 
 3. **ローカルテストでのデバッグ**:
 ```bash
-# 直接ハンドラーをテスト
-python wambda-admin.py get -p /
-
-# POSTリクエストテスト
-python wambda-admin.py get -p /accounts/login -m POST -b "username=test&password=secret"
-
-# カスタムイベントでテスト
-python wambda-admin.py get -e custom-event.json
+# lambda_function.pyを直接実行してデバッグ
+cd Lambda
+python lambda_function.py
+# 対話的にパスとメソッドを指定してテスト可能
 ```
 
 ### エラートレースの取得

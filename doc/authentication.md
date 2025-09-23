@@ -76,6 +76,28 @@ aws ssm put-parameter \
   --type "SecureString"
 ```
 
+**💡 パフォーマンス最適化: SSMパラメータキャッシュ**
+
+WAMBDAではCognito設定のSSMパラメータを自動的にキャッシュして、パフォーマンスを最適化します：
+
+- **Lambdaコンテナレベルキャッシュ**: 初回取得後、コンテナの生存期間中はメモリにキャッシュ
+- **呼び出し回数削減**: SSM API制限を考慮し、各コンテナで一度のみ取得
+- **自動バッチ取得**: 必要なパラメータを一括で取得してキャッシュに保存
+
+```python
+# wambda/authenticate.py（フレームワーク内部実装）
+_cognito_settings_cache = None  # コンテナレベルキャッシュ
+
+def get_cognito_settings(master):
+    global _cognito_settings_cache
+
+    if _cognito_settings_cache is not None:
+        return _cognito_settings_cache  # キャッシュヒット時は即座に返却
+
+    # 初回のみSSMから取得
+    # ... SSMパラメータ取得処理 ...
+```
+
 ### 3. settings.py設定
 
 ```python

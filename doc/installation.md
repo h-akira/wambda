@@ -17,7 +17,7 @@ WAMBDAを使用するために、以下のツールがインストールされ�
 - **AWS SAM CLI** - ローカル開発サーバー（proxy）とAWSデプロイ用
   - `wambda-admin.py proxy` 使用時に必要
   - AWS環境へのデプロイ時に必要
-  - **注意**: `wambda-admin.py get` によるテストでは不要
+  - **注意**: `python lambda_function.py` によるテストでは不要
 
 ### 推奨ツール
 
@@ -170,10 +170,8 @@ sam build && sam deploy sam
 
 ```bash
 # Lambda関数の直接テスト（SAM CLI不要）
-wambda-admin.py get
-
-# 特定パスのテスト
-wambda-admin.py get -p /api/test
+cd Lambda
+python lambda_function.py
 ```
 
 ## 静的ファイルの設定

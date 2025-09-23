@@ -69,17 +69,9 @@ sam local start-api              # SAM Local APIサーバー（ポート 3000）
 
 ### 3. テスト
 ```bash
-# 基本テスト
-python wambda-admin.py get
-
-# 特定パス・メソッドのテスト
-python wambda-admin.py get -p /api/users -m POST
-
-# カスタムイベントファイル使用
-python wambda-admin.py get -e custom-event.json
-
-# リクエストボディ付きテスト
-python wambda-admin.py get -p /accounts/login -m POST -b "username=test&password=secret"
+# lambda_function.pyを直接実行してテスト
+cd Lambda
+python lambda_function.py
 ```
 
 ### 4. AWS デプロイ

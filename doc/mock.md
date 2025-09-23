@@ -248,15 +248,12 @@ NO_AUTH = True   # 認証をバイパス（開発時）
 ### 2. テストコマンド実行
 
 ```bash
-# モック環境でのテスト
-wambda-admin.py get -p /
-
-# 特定のAPIエンドポイントをテスト
-wambda-admin.py get -p /api/users -m GET
-
-# POSTリクエストのテスト
-wambda-admin.py get -p /api/users -m POST -b '{"name":"テストユーザー"}'
+# モック環境でのテスト（lambda_function.pyを直接実行）
+cd Lambda
+python lambda_function.py
 ```
+
+**注意**: `wambda-admin.py get`コマンドは廃止されました。代わりに`python lambda_function.py`を使用してください。
 
 ### 3. ローカル開発サーバー
 
@@ -269,29 +266,20 @@ wambda-admin.py proxy
 
 ## 🧪 テストシナリオの例
 
-### ユーザー管理機能のテスト
+### lambda_function.py直接実行でのテスト
 
 ```bash
-# ユーザー一覧取得
-wambda-admin.py get -p /api/users
-
-# 新規ユーザー作成
-wambda-admin.py get -p /api/users -m POST -b '{
-  "name": "新規ユーザー",
-  "email": "newuser@example.com"
-}'
-
-# ユーザー詳細取得
-wambda-admin.py get -p /api/users/1
-
-# ユーザー更新
-wambda-admin.py get -p /api/users/1 -m PUT -b '{
-  "name": "更新されたユーザー"
-}'
-
-# ユーザー削除
-wambda-admin.py get -p /api/users/1 -m DELETE
+# モック環境でのテスト実行
+cd Lambda
+python lambda_function.py
 ```
+
+`main_debug_handler`により、対話的にHTTPリクエストをテストできます。以下のような流れでテストが可能です：
+
+1. パスの入力（例: `/`, `/api/users`）
+2. HTTPメソッドの選択（GET, POST, PUT, DELETE）
+3. リクエストボディの入力（POST/PUT時）
+4. モック環境での実行結果確認
 
 ## ⚙️ 設定のカスタマイズ
 
@@ -408,7 +396,7 @@ def debug_parameters():
 
 ## 📚 関連ドキュメント
 
-- [CLI Tools](./cli-tools.md) - getコマンドでのモック機能テスト
+- [CLI Tools](./cli-tools.md) - lambda_function.py直接実行でのモック機能テスト
 - [Local Development](./local-development.md) - ローカル開発環境でのモック利用
 - [Best Practices](./best-practices.md) - 開発・テストのベストプラクティス
 

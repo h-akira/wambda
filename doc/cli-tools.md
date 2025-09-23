@@ -8,7 +8,7 @@ WAMBDAは強力なコマンドラインツール `wambda-admin.py` を提供し�
 
 - **プロジェクト初期化**: テンプレートベースの新規プロジェクト作成
 - **ローカル開発サーバー**: 統合プロキシサーバーと静的ファイル配信
-- **テスト機能**: SAM Local Invokeによる単体テスト
+- **テスト機能**: lambda_function.py直接実行によるテスト
 - **ヘルプ機能**: 組み込みヘルプとサブコマンド案内
 
 ### 基本構文
@@ -21,7 +21,6 @@ wambda-admin.py <command> [options]
 wambda-admin.py init      # プロジェクト初期化
 wambda-admin.py proxy     # プロキシサーバー起動
 wambda-admin.py static    # 静的ファイルサーバー起動
-wambda-admin.py get       # Lambda関数テスト
 wambda-admin.py help      # ヘルプ表示
 ```
 

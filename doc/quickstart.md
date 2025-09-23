@@ -14,7 +14,7 @@
 ### 1. プロジェクト初期化
 
 ```bash
-wambda-admin.py --init
+wambda-admin.py init
 ```
 
 以下のように入力：
@@ -506,11 +506,9 @@ wambda-admin.py proxy
 ### 3. コマンドラインでテスト
 
 ```bash
-# トップページのテスト
-wambda-admin.py get
-
-# 特定パスのテスト
-wambda-admin.py get -p /add
+# lambda_function.pyを直接実行してテスト
+cd Lambda
+python lambda_function.py
 ```
 
 ## ☁️ AWSへのデプロイ

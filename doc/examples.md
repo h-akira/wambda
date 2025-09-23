@@ -147,23 +147,21 @@ def my_view(master):
 ### ローカルテスト
 
 ```bash
-# 基本テスト
-python wambda-admin.py get
-
-# 特定パスのテスト
-python wambda-admin.py get -p /accounts/login -m GET
-
-# POSTリクエストのテスト
-python wambda-admin.py get -p /accounts/login -m POST -b "username=test&password=secret"
+# lambda_function.pyを直接実行してテスト
+cd Lambda
+python lambda_function.py
 ```
 
 ### 認証テスト
 
 ```bash
-# ログインフローテスト
-python wambda-admin.py get -p /accounts/signup
-python wambda-admin.py get -p /accounts/verify
-python wambda-admin.py get -p /accounts/login
+# ログインフローテスト（対話的実行）
+cd Lambda
+python lambda_function.py
+# 実行時に以下のパスをテスト:
+# /accounts/signup
+# /accounts/verify
+# /accounts/login
 ```
 
 ## トラブルシューティング
