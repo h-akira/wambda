@@ -2,7 +2,7 @@
 
 **W**eb **A**pplication framework for **M**odern **B**ackend **D**evelopment on **A**WS
 
-WAMBDA（ワンバダ）は、AWS Lambdaで動作するサーバーレスWebアプリケーション開発フレームワークです。Django風のアーキテクチャを採用し、単一のLambda関数ですべてのリクエストを処理する「Lambdalithアプローチ」を採用しています。
+WAMBDA（ワムダ）は、AWS Lambdaで動作するサーバーレスWebアプリケーション開発フレームワークです。Django風のアーキテクチャを採用し、単一のLambda関数ですべてのリクエストを処理する「Lambdalithアプローチ」を採用しています。
 
 ## 特徴
 
@@ -18,7 +18,7 @@ WAMBDA（ワンバダ）は、AWS Lambdaで動作するサーバーレスWebア�
 - **フォーム検証**: WTFormsによる統合フォーム処理
 - **モック環境**: motoライブラリによるローカルAWSサービステスト
 - **プロキシサーバー**: SAM Local + 静的ファイルサーバーの統合開発環境
-- **クエリパラメータ**: URLクエリパラメータの完全サポート
+- **クエリパラメータ**: URLクエリパラメータサポート
 - **パスワード管理**: パスワード変更・リセット機能
 - **アカウント削除**: 完全なアカウント削除機能
 
@@ -26,9 +26,9 @@ WAMBDA（ワンバダ）は、AWS Lambdaで動作するサーバーレスWebア�
 
 ### システム構成
 ```
-[API Gateway] → [Lambda Function] → [AWS Services]
-     ↓
-[S3 Static Files]
+[CloudFront]
+     ├── [API Gateway] → [Lambda Function] → [AWS Services]
+     └── [S3 Static Files]
 ```
 
 ### Lambda内部構造

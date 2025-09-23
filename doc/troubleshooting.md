@@ -21,30 +21,26 @@
 
 **解決方法**:
 
-1. **正しいディレクトリの確認**:
+1. **requirements.txtの確認**:
 ```bash
-# lambda_function.pyと同じディレクトリにwambdaライブラリが必要
-Lambda/
-├── lambda_function.py
-├── wambda/           # wambdaライブラリ
-│   ├── handler.py
-│   ├── authenticate.py
-│   └── shortcuts.py
-└── project/
-    └── settings.py
+# Lambda/requirements.txtにwambdaが記載されているか確認
+cd Lambda
+cat requirements.txt | grep wambda
+
+# wambdaがインストールされているか確認
+pip list | grep wambda
 ```
 
-2. **パスの確認**:
-```python
-# Lambda/lambda_function.py
-import sys
-import os
-sys.path.append(os.path.dirname(__file__))  # 現在のディレクトリをパスに追加
+2. **sam buildの実行**:
+```bash
+# sam buildでwambdaライブラリが自動的にパッケージに含まれる
+sam build
 
-from wambda.handler import Master
+# ビルド後の構造確認
+ls -la .aws-sam/build/MainFunction/
 ```
 
-3. **WambdaInitProject_SSR001から正しくコピー**:
+3. **WambdaInitProject_SSR001テンプレートの使用**:
 ```bash
 # 正しいテンプレートを使用
 python wambda-admin.py init -n my-project -t SSR001

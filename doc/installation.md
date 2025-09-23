@@ -22,7 +22,6 @@ WAMBDAを使用するために、以下のツールがインストールされ�
 ### 推奨ツール
 
 - **Docker** - SAM Localでのローカル実行（proxy使用時）
-- **VS Code** - Python開発に適したエディタ
 
 ## インストール手順
 
@@ -56,16 +55,7 @@ pip install aws-sam-cli
 
 ### 3. WAMBDAフレームワークのインストール
 
-#### PyPI登録について
-
-WAMBDAは名前の重複により、PyPIへの登録が困難な状況です。以下の選択肢を検討中：
-
-- **現状維持**: GitHubリポジトリからの直接インストール
-- **名前変更**: 新しい名前でPyPIに登録（将来的な選択肢）
-
-#### 現在のインストール方法
-
-GitHubリポジトリから直接インストール：
+GitHubリポジトリからインストール：
 
 ```bash
 # リポジトリのクローン
@@ -120,7 +110,7 @@ aws configure --profile prod
 ### 1. プロジェクトの初期化
 
 ```bash
-wambda-admin.py --init
+wambda-admin.py init
 ```
 
 対話的にプロジェクト設定を入力：
@@ -210,26 +200,6 @@ aws s3 mb s3://your-unique-bucket-name --region ap-northeast-1
 sam build && sam deploy2s3
 ```
 
-## エディタの設定
-
-### VS Code の推奨拡張機能
-
-- **Python** - Python開発サポート
-- **AWS Toolkit** - AWS統合
-- **YAML** - template.yamlの編集
-
-### .vscode/settings.json
-
-```json
-{
-    "python.defaultInterpreterPath": "./venv/bin/python",
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
-    "yaml.schemas": {
-        "https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json": "*template.yaml"
-    }
-}
-```
 
 ## トラブルシューティング
 
