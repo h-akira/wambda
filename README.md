@@ -1,7 +1,4 @@
 # WAMBDA
-
-**W**eb **A**pplication framework for **M**odern **B**ackend **D**evelopment on **A**WS
-
 WAMBDA（ワムダ）は、AWS Lambdaで動作するサーバーレスWebアプリケーション開発フレームワークです。Django風のアーキテクチャを採用し、単一のLambda関数ですべてのリクエストを処理する「Lambdalithアプローチ」を採用しています。
 
 ## 特徴
