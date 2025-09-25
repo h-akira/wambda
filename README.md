@@ -1,9 +1,10 @@
 # WAMBDA
-WAMBDA（ワムダ）は、AWS Lambdaで動作するサーバーレスWebアプリケーション開発フレームワークです。Django風のアーキテクチャを採用し、単一のLambda関数ですべてのリクエストを処理する「Lambdalithアプローチ」を採用しています。
+WAMBDA（ワムダ）は、AWS Lambdaで動作するサーバーレスWebアプリケーション開発フレームワークです。従来のWebフレームワークがRDBMSを前提とするのに対し、WAMBDAはCognito認証・DynamoDBを標準とするクラウドネイティブ設計を採用。Django風の記法で親しみやすさを保ちつつ、単一のLambda関数ですべてのリクエストを処理する「Lambdalithアプローチ」を実現します。
 
 ## 特徴
 
 ### 🎯 設計思想
+- **AWSマネージドサービス活用**: Cognito認証・DynamoDB標準採用によるクラウドネイティブ設計
 - **SAM活用**: AWS Serverless Application Modelによるインフラ管理
 - **単一Lambda**: 一つのLambda関数ですべてのリクエストを処理（Lambdalithアプローチ）
 - **S3静的ファイル配信**: 効率的な静的ファイル配信
