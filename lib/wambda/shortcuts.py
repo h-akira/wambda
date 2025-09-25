@@ -66,31 +66,35 @@ def static(master, file_path):
     # 完全なURLパスを構築
     return _build_full_path(mapping_path, static_url, file_path)
 
-def redirect(master, url_name, query_params=None, **kwargs):
+def redirect(master, url_name, query_params=None, no_reverse=False, **kwargs):
     """
     指定されたURL名前にリダイレクトするレスポンスを生成
-    
+
     Args:
         master: Masterインスタンス
-        url_name: リダイレクト先のURL名前
+        url_name: リダイレクト先のURL名前またはURL
         query_params: クエリパラメータの辞書 (例: {'key': 'value'})
+        no_reverse: Trueの場合、url_nameをそのままURLとして使用（reverseしない）
         **kwargs: URLパラメータ
-        
+
     Returns:
         302リダイレクトレスポンス
     """
     import urllib.parse
-    
+
     # ベースURLを生成
-    base_url = reverse(master, url_name, **kwargs)
-    
+    if no_reverse:
+        base_url = url_name
+    else:
+        base_url = reverse(master, url_name, **kwargs)
+
     # クエリパラメータがある場合は追加
     if query_params:
         query_string = urllib.parse.urlencode(query_params)
         full_url = f"{base_url}?{query_string}"
     else:
         full_url = base_url
-    
+
     return {
         "statusCode": 302,
         "headers": {

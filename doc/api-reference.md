@@ -267,8 +267,9 @@ def api_view(master):
 | パラメータ | 型 | 説明 |
 |-----------|----|----- |
 | `master` | Master | Masterオブジェクト |
-| `url_name` | str | リダイレクト先のURL名 |
+| `url_name` | str | リダイレクト先のURL名またはURL |
 | `query_params` | dict | クエリパラメータの辞書（オプション） |
+| `no_reverse` | bool | Trueの場合、url_nameをそのままURLとして使用（reverseしない）（オプション） |
 | `**kwargs` | dict | URLパラメータ |
 
 #### 戻り値
@@ -297,10 +298,18 @@ def signup_success(master):
 
 def complex_redirect(master):
     # URLパラメータとクエリパラメータの両方
-    return redirect(master, "user:posts", 
+    return redirect(master, "user:posts",
                    user_id="123",
                    query_params={'filter': 'published', 'sort': 'date'})
     # 生成されるURL: /user/123/posts?filter=published&sort=date
+
+def direct_url_redirect(master):
+    # 直接URLを指定してリダイレクト
+    return redirect(master, "/app/dashboard", no_reverse=True)
+
+def external_redirect(master):
+    # 外部URLへのリダイレクト
+    return redirect(master, "https://example.com", no_reverse=True)
 ```
 
 ### reverse(master, app_name, **kwargs)
